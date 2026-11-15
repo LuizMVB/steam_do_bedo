@@ -59,7 +59,8 @@ SET search_path TO steam_do_bedo;
 --     dois comandos concorrentes que mexem nos mesmos canais travam as
 --     linhas na mesma ordem e não entram em deadlock.
 --   * Soma via delta: se alguém desligar o trigger e alterar Video, o
---     derivado fica errado. A conferência está no tests.sql (parte 2).
+--     derivado fica errado. Para conferir: comparar qtd_visualizacoes
+--     com SUM(visu_total) dos vídeos do canal.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION steam_do_bedo.fn_t01_video_qtd_visualizacoes()
 RETURNS trigger

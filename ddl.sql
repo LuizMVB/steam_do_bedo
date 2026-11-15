@@ -15,8 +15,7 @@
 --                      índices de apoio (criados depois da carga)
 --   5. triggers.sql    triggers T1 a T11 (depois da carga, para não
 --                      pesar nem travar a inserção em lote)
---   6. tests.sql       chamadas das functions e, na parte 2, os testes
---                      dos triggers (desfeitos com ROLLBACK)
+--   6. tests.sql       chamadas das functions em vários cenários
 --
 -- Regra de alteração do modelo (DEC-019, fala do professor em 00:15):
 -- o modelo relacional do enunciado não muda de relações. Pode: remodelar
