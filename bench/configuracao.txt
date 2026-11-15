@@ -1,0 +1,6 @@
+Configuração do servidor de aferição (as sessões de medida fixam jit=off e max_parallel_workers_per_gather=0; ver bench/medir.sh)
+PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+128MB
+4MB
+4GB
+4

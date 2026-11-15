@@ -1,0 +1,811 @@
+fase,consulta,item,filtro,variante,cenario,cache,rep,planejamento_ms,execucao_ms,no_principal,scans,shared_read,shared_hit,linhas,plano
+base,i01_sem,1,sem,final,sem_apoio,frio,1,18.982,2926.109,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,planos/base__i01_sem__final__sem_apoio__frio.json
+base,i01_sem,1,sem,final,sem_apoio,frio,2,23.928,1467.714,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+base,i01_sem,1,sem,final,sem_apoio,frio,3,18.107,1458.983,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+base,i01_sem,1,sem,final,sem_apoio,frio,4,24.675,1498.47,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+base,i01_sem,1,sem,final,sem_apoio,frio,5,30.434,2050.711,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+base,i01_sem,1,sem,final,sem_apoio,quente,1,2.876,1308.461,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27806,799,25108,planos/base__i01_sem__final__sem_apoio__quente.json
+base,i01_sem,1,sem,final,sem_apoio,quente,2,2.998,1107.55,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27742,863,25108,
+base,i01_sem,1,sem,final,sem_apoio,quente,3,1.805,954.42,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27678,927,25108,
+base,i01_sem,1,sem,final,sem_apoio,quente,4,2.669,888.877,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27614,991,25108,
+base,i01_sem,1,sem,final,sem_apoio,quente,5,1.175,1179.374,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27550,1055,25108,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,frio,1,17.702,1590.816,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,22527,2999,1252,planos/base__i01_peq__final__sem_apoio__frio.json
+base,i01_peq,1,plataforma pequena,final,sem_apoio,frio,2,17.264,769.306,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,22527,2999,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,frio,3,8.785,507.156,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,22527,2999,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,frio,4,11.936,586.578,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,22527,2999,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,frio,5,7.892,541.109,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,22527,2999,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,quente,1,1.473,251.914,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,19783,5743,1252,planos/base__i01_peq__final__sem_apoio__quente.json
+base,i01_peq,1,plataforma pequena,final,sem_apoio,quente,2,2.363,257.089,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,19751,5775,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,quente,3,1.368,254.995,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,19719,5807,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,quente,4,1.795,271.542,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,19687,5839,1252,
+base,i01_peq,1,plataforma pequena,final,sem_apoio,quente,5,1.523,318.408,Seq Scan video,Seq Scan video; Index Scan usuario; Seq Scan canal,19655,5871,1252,
+base,i01_grd,1,plataforma grande,final,sem_apoio,frio,1,28.79,1006.123,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,planos/base__i01_grd__final__sem_apoio__frio.json
+base,i01_grd,1,plataforma grande,final,sem_apoio,frio,2,20.714,614.003,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,frio,3,15.831,572.35,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,frio,4,15.656,772.237,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,frio,5,21.807,932.647,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,quente,1,3.622,713.7,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27806,799,10092,planos/base__i01_grd__final__sem_apoio__quente.json
+base,i01_grd,1,plataforma grande,final,sem_apoio,quente,2,2.47,628.944,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27742,863,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,quente,3,15.152,1159.631,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27678,927,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,quente,4,3.276,550.985,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27614,991,10092,
+base,i01_grd,1,plataforma grande,final,sem_apoio,quente,5,6.729,564.972,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27550,1055,10092,
+base,i02_sem,2,sem,final,sem_apoio,frio,1,153.122,14842.907,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,planos/base__i02_sem__final__sem_apoio__frio.json
+base,i02_sem,2,sem,final,sem_apoio,frio,2,18.814,9262.166,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+base,i02_sem,2,sem,final,sem_apoio,frio,3,40.588,9803.763,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+base,i02_sem,2,sem,final,sem_apoio,frio,4,20.052,10246.869,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+base,i02_sem,2,sem,final,sem_apoio,frio,5,23.786,11038.826,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+base,i02_sem,2,sem,final,sem_apoio,quente,1,2.947,9748.889,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31430,800,1247319,planos/base__i02_sem__final__sem_apoio__quente.json
+base,i02_sem,2,sem,final,sem_apoio,quente,2,3.607,12897.301,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31366,864,1247319,
+base,i02_sem,2,sem,final,sem_apoio,quente,3,3.014,9893.215,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31302,928,1247319,
+base,i02_sem,2,sem,final,sem_apoio,quente,4,4.202,10747.19,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31238,992,1247319,
+base,i02_sem,2,sem,final,sem_apoio,quente,5,5.127,9563.98,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31174,1056,1247319,
+base,i02_com,2,canal,final,sem_apoio,frio,1,25.014,326.253,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,planos/base__i02_com__final__sem_apoio__frio.json
+base,i02_com,2,canal,final,sem_apoio,frio,2,20.929,351.09,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+base,i02_com,2,canal,final,sem_apoio,frio,3,19.37,590.899,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+base,i02_com,2,canal,final,sem_apoio,frio,4,8.466,127.98,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+base,i02_com,2,canal,final,sem_apoio,frio,5,8.758,109.564,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+base,i02_com,2,canal,final,sem_apoio,quente,1,2.367,5.731,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,planos/base__i02_com__final__sem_apoio__quente.json
+base,i02_com,2,canal,final,sem_apoio,quente,2,1.68,5.758,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+base,i02_com,2,canal,final,sem_apoio,quente,3,1.397,4.994,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+base,i02_com,2,canal,final,sem_apoio,quente,4,1.598,4.984,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+base,i02_com,2,canal,final,sem_apoio,quente,5,1.437,5.01,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+base,i03_sem,3,sem,final,sem_apoio,frio,1,20.311,823.266,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,planos/base__i03_sem__final__sem_apoio__frio.json
+base,i03_sem,3,sem,final,sem_apoio,frio,2,17.492,1424.8,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+base,i03_sem,3,sem,final,sem_apoio,frio,3,12.275,942.125,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+base,i03_sem,3,sem,final,sem_apoio,frio,4,15.093,853.382,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+base,i03_sem,3,sem,final,sem_apoio,frio,5,22.215,744.024,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+base,i03_sem,3,sem,final,sem_apoio,quente,1,3.18,904.81,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19670,800,35906,planos/base__i03_sem__final__sem_apoio__quente.json
+base,i03_sem,3,sem,final,sem_apoio,quente,2,9.115,644.532,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19606,864,35906,
+base,i03_sem,3,sem,final,sem_apoio,quente,3,3.285,905.788,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19542,928,35906,
+base,i03_sem,3,sem,final,sem_apoio,quente,4,5.678,1701.567,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19478,992,35906,
+base,i03_sem,3,sem,final,sem_apoio,quente,5,8.958,3566.47,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19414,1056,35906,
+base,i03_com,3,streamer,final,sem_apoio,frio,1,21.499,195.024,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,1545,9,2,planos/base__i03_com__final__sem_apoio__frio.json
+base,i03_com,3,streamer,final,sem_apoio,frio,2,22.921,175.121,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,1545,9,2,
+base,i03_com,3,streamer,final,sem_apoio,frio,3,10.409,73.422,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,1545,9,2,
+base,i03_com,3,streamer,final,sem_apoio,frio,4,11.315,81.363,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,1545,9,2,
+base,i03_com,3,streamer,final,sem_apoio,frio,5,29.885,199.18,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,1545,9,2,
+base,i03_com,3,streamer,final,sem_apoio,quente,1,1.782,8.319,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,0,1554,2,planos/base__i03_com__final__sem_apoio__quente.json
+base,i03_com,3,streamer,final,sem_apoio,quente,2,1.908,9.02,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,0,1554,2,
+base,i03_com,3,streamer,final,sem_apoio,quente,3,2.184,8.612,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,0,1554,2,
+base,i03_com,3,streamer,final,sem_apoio,quente,4,4.618,13.578,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,0,1554,2,
+base,i03_com,3,streamer,final,sem_apoio,quente,5,2.512,9.929,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Seq Scan canal; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario,0,1554,2,
+base,i04_sem,4,sem,final,sem_apoio,frio,1,16.902,1172.877,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,planos/base__i04_sem__final__sem_apoio__frio.json
+base,i04_sem,4,sem,final,sem_apoio,frio,2,21.795,856.525,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+base,i04_sem,4,sem,final,sem_apoio,frio,3,13.389,820.616,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+base,i04_sem,4,sem,final,sem_apoio,frio,4,19.684,2378.79,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+base,i04_sem,4,sem,final,sem_apoio,frio,5,15.788,818.517,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+base,i04_sem,4,sem,final,sem_apoio,quente,1,4.945,564.166,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18990,152364,7122,planos/base__i04_sem__final__sem_apoio__quente.json
+base,i04_sem,4,sem,final,sem_apoio,quente,2,4.638,816.414,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19513,151841,7122,
+base,i04_sem,4,sem,final,sem_apoio,quente,3,6.833,540.163,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20800,150554,7122,
+base,i04_sem,4,sem,final,sem_apoio,quente,4,3.072,1152.511,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18927,152427,7122,
+base,i04_sem,4,sem,final,sem_apoio,quente,5,6.243,912.092,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19255,152099,7122,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,frio,1,20.427,416.48,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,planos/base__i04_peq__final__sem_apoio__frio.json
+base,i04_peq,4,plataforma pequena,final,sem_apoio,frio,2,40.206,591.827,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,frio,3,21.794,413.626,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,frio,4,12.572,356.882,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,frio,5,25.619,487.663,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,quente,1,2.458,311.154,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19783,1574,258,planos/base__i04_peq__final__sem_apoio__quente.json
+base,i04_peq,4,plataforma pequena,final,sem_apoio,quente,2,1.833,285.43,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19751,1606,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,quente,3,1.731,298.445,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19719,1638,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,quente,4,1.932,288.286,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19687,1670,258,
+base,i04_peq,4,plataforma pequena,final,sem_apoio,quente,5,6.623,428.755,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19655,1702,258,
+base,i05_sem,5,sem,final,sem_apoio,frio,1,20.614,116.217,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,planos/base__i05_sem__final__sem_apoio__frio.json
+base,i05_sem,5,sem,final,sem_apoio,frio,2,15.479,86.736,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+base,i05_sem,5,sem,final,sem_apoio,frio,3,17.738,117.965,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+base,i05_sem,5,sem,final,sem_apoio,frio,4,24.611,84.9,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+base,i05_sem,5,sem,final,sem_apoio,frio,5,13.773,88.428,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+base,i05_sem,5,sem,final,sem_apoio,quente,1,1.579,69.04,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,planos/base__i05_sem__final__sem_apoio__quente.json
+base,i05_sem,5,sem,final,sem_apoio,quente,2,1.314,69.207,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+base,i05_sem,5,sem,final,sem_apoio,quente,3,1.411,73.517,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+base,i05_sem,5,sem,final,sem_apoio,quente,4,1.41,69.621,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+base,i05_sem,5,sem,final,sem_apoio,quente,5,1.348,72.541,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+base,i05_com,5,empresa,final,sem_apoio,frio,1,42.002,52.281,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,planos/base__i05_com__final__sem_apoio__frio.json
+base,i05_com,5,empresa,final,sem_apoio,frio,2,24.984,37.188,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+base,i05_com,5,empresa,final,sem_apoio,frio,3,10.967,11.859,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+base,i05_com,5,empresa,final,sem_apoio,frio,4,7.575,12.408,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+base,i05_com,5,empresa,final,sem_apoio,frio,5,9.248,12.76,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+base,i05_com,5,empresa,final,sem_apoio,quente,1,1.347,2.942,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,planos/base__i05_com__final__sem_apoio__quente.json
+base,i05_com,5,empresa,final,sem_apoio,quente,2,1.66,2.77,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+base,i05_com,5,empresa,final,sem_apoio,quente,3,1.762,2.756,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+base,i05_com,5,empresa,final,sem_apoio,quente,4,1.453,2.698,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+base,i05_com,5,empresa,final,sem_apoio,quente,5,1.468,2.721,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+base,i06_sem,6,sem,final,sem_apoio,frio,1,21.903,4619.578,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,planos/base__i06_sem__final__sem_apoio__frio.json
+base,i06_sem,6,sem,final,sem_apoio,frio,2,28.013,3122.73,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+base,i06_sem,6,sem,final,sem_apoio,frio,3,27.361,3051.216,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+base,i06_sem,6,sem,final,sem_apoio,frio,4,87.658,3510.034,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+base,i06_sem,6,sem,final,sem_apoio,frio,5,29.621,3406.977,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+base,i06_sem,6,sem,final,sem_apoio,quente,1,7.085,3157.511,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,8023,5395,320684,planos/base__i06_sem__final__sem_apoio__quente.json
+base,i06_sem,6,sem,final,sem_apoio,quente,2,3.821,3857.891,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7991,5427,320684,
+base,i06_sem,6,sem,final,sem_apoio,quente,3,90.528,5251.763,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7959,5459,320684,
+base,i06_sem,6,sem,final,sem_apoio,quente,4,5.326,5943.984,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7927,5491,320684,
+base,i06_sem,6,sem,final,sem_apoio,quente,5,8.765,4451.741,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7895,5523,320684,
+base,i06_com,6,usuario,final,sem_apoio,frio,1,30.213,227.841,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,4040,95,1,planos/base__i06_com__final__sem_apoio__frio.json
+base,i06_com,6,usuario,final,sem_apoio,frio,2,26.944,159.869,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,4040,95,1,
+base,i06_com,6,usuario,final,sem_apoio,frio,3,23.85,159.995,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,4040,95,1,
+base,i06_com,6,usuario,final,sem_apoio,frio,4,28.712,365.057,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,4040,95,1,
+base,i06_com,6,usuario,final,sem_apoio,frio,5,26.492,159.869,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,4040,95,1,
+base,i06_com,6,usuario,final,sem_apoio,quente,1,2.572,92.662,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,0,4135,1,planos/base__i06_com__final__sem_apoio__quente.json
+base,i06_com,6,usuario,final,sem_apoio,quente,2,2.433,90.725,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,0,4135,1,
+base,i06_com,6,usuario,final,sem_apoio,quente,3,2.367,90.86,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,0,4135,1,
+base,i06_com,6,usuario,final,sem_apoio,quente,4,2.362,91.054,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,0,4135,1,
+base,i06_com,6,usuario,final,sem_apoio,quente,5,2.119,92.112,Seq Scan inscricao,Seq Scan inscricao; Index Scan nivelcanal; Seq Scan pais; Seq Scan conversao,0,4135,1,
+base,i07_sem,7,sem,final,sem_apoio,frio,1,23.312,955.613,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,planos/base__i07_sem__final__sem_apoio__frio.json
+base,i07_sem,7,sem,final,sem_apoio,frio,2,32.755,702.535,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+base,i07_sem,7,sem,final,sem_apoio,frio,3,46.652,2807.389,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+base,i07_sem,7,sem,final,sem_apoio,frio,4,30.54,743.912,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+base,i07_sem,7,sem,final,sem_apoio,frio,5,28.348,709.853,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+base,i07_sem,7,sem,final,sem_apoio,quente,1,3.037,454.241,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18994,152351,7122,planos/base__i07_sem__final__sem_apoio__quente.json
+base,i07_sem,7,sem,final,sem_apoio,quente,2,5.651,793.726,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19529,151816,7122,
+base,i07_sem,7,sem,final,sem_apoio,quente,3,3.481,412.885,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20781,150564,7122,
+base,i07_sem,7,sem,final,sem_apoio,quente,4,3.402,461.785,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18951,152394,7122,
+base,i07_sem,7,sem,final,sem_apoio,quente,5,3.112,394.393,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19280,152065,7122,
+base,i07_com,7,canal,final,sem_apoio,frio,1,24.2,228.337,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,planos/base__i07_com__final__sem_apoio__frio.json
+base,i07_com,7,canal,final,sem_apoio,frio,2,70.856,729.456,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+base,i07_com,7,canal,final,sem_apoio,frio,3,134.49,553.859,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+base,i07_com,7,canal,final,sem_apoio,frio,4,24.784,199.173,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+base,i07_com,7,canal,final,sem_apoio,frio,5,21.899,206.826,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+base,i07_com,7,canal,final,sem_apoio,quente,1,1.847,4.518,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,planos/base__i07_com__final__sem_apoio__quente.json
+base,i07_com,7,canal,final,sem_apoio,quente,2,2.075,4.697,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+base,i07_com,7,canal,final,sem_apoio,quente,3,1.81,4.778,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+base,i07_com,7,canal,final,sem_apoio,quente,4,2.049,6.209,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+base,i07_com,7,canal,final,sem_apoio,quente,5,2.318,4.887,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+base,i08_k10,8,k=10,final,sem_apoio,frio,1,27.545,58.307,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/base__i08_k10__final__sem_apoio__frio.json
+base,i08_k10,8,k=10,final,sem_apoio,frio,2,13.854,23.631,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i08_k10,8,k=10,final,sem_apoio,frio,3,27.19,46.167,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i08_k10,8,k=10,final,sem_apoio,frio,4,17.607,51.771,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i08_k10,8,k=10,final,sem_apoio,frio,5,9.711,25.093,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i08_k10,8,k=10,final,sem_apoio,quente,1,1.165,22.184,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/base__i08_k10__final__sem_apoio__quente.json
+base,i08_k10,8,k=10,final,sem_apoio,quente,2,1.235,12.642,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i08_k10,8,k=10,final,sem_apoio,quente,3,1.316,12.388,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i08_k10,8,k=10,final,sem_apoio,quente,4,1.245,14.834,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i08_k10,8,k=10,final,sem_apoio,quente,5,1.359,13.239,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i09_k10,9,k=10,final,sem_apoio,frio,1,7.637,39.989,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/base__i09_k10__final__sem_apoio__frio.json
+base,i09_k10,9,k=10,final,sem_apoio,frio,2,14.197,37.844,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i09_k10,9,k=10,final,sem_apoio,frio,3,23.811,78.879,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i09_k10,9,k=10,final,sem_apoio,frio,4,13.489,37.469,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i09_k10,9,k=10,final,sem_apoio,frio,5,13.681,29.728,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i09_k10,9,k=10,final,sem_apoio,quente,1,1.26,18.905,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/base__i09_k10__final__sem_apoio__quente.json
+base,i09_k10,9,k=10,final,sem_apoio,quente,2,1.455,22.819,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i09_k10,9,k=10,final,sem_apoio,quente,3,1.814,23.094,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i09_k10,9,k=10,final,sem_apoio,quente,4,2.155,23.898,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i09_k10,9,k=10,final,sem_apoio,quente,5,2.406,19.293,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i10_k10,10,k=10,final,sem_apoio,frio,1,36.129,104.107,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/base__i10_k10__final__sem_apoio__frio.json
+base,i10_k10,10,k=10,final,sem_apoio,frio,2,7.08,23.457,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i10_k10,10,k=10,final,sem_apoio,frio,3,9.164,22.89,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i10_k10,10,k=10,final,sem_apoio,frio,4,7.312,25.69,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i10_k10,10,k=10,final,sem_apoio,frio,5,6.825,37.414,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i10_k10,10,k=10,final,sem_apoio,quente,1,1.13,13.479,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/base__i10_k10__final__sem_apoio__quente.json
+base,i10_k10,10,k=10,final,sem_apoio,quente,2,1.389,13.512,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i10_k10,10,k=10,final,sem_apoio,quente,3,1.35,15.41,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i10_k10,10,k=10,final,sem_apoio,quente,4,1.18,12.779,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i10_k10,10,k=10,final,sem_apoio,quente,5,1.276,12.805,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i11_k10,11,k=10,final,sem_apoio,frio,1,19.98,51.784,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/base__i11_k10__final__sem_apoio__frio.json
+base,i11_k10,11,k=10,final,sem_apoio,frio,2,20.231,47.373,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i11_k10,11,k=10,final,sem_apoio,frio,3,64.366,97.414,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i11_k10,11,k=10,final,sem_apoio,frio,4,21.578,58.023,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i11_k10,11,k=10,final,sem_apoio,frio,5,20.512,51.764,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+base,i11_k10,11,k=10,final,sem_apoio,quente,1,1.488,28.675,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/base__i11_k10__final__sem_apoio__quente.json
+base,i11_k10,11,k=10,final,sem_apoio,quente,2,2.155,33.978,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i11_k10,11,k=10,final,sem_apoio,quente,3,2.384,32.707,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i11_k10,11,k=10,final,sem_apoio,quente,4,6.729,56.408,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i11_k10,11,k=10,final,sem_apoio,quente,5,10.921,45.867,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,frio,1,28.969,183.49,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,planos/base__i12_sem__final__sem_apoio__frio.json
+base,i12_sem,12,k=10,anterior,sem_apoio,frio,2,16.071,64.146,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,frio,3,12.668,100.858,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,frio,4,15.915,55.347,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,frio,5,16.766,56.863,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,quente,1,1.269,46.028,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,planos/base__i12_sem__final__sem_apoio__quente.json
+base,i12_sem,12,k=10,anterior,sem_apoio,quente,2,1.251,45.18,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,quente,3,1.279,45.969,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,quente,4,1.184,47.75,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+base,i12_sem,12,k=10,anterior,sem_apoio,quente,5,1.066,44.216,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,1,13.314,16.206,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,planos/base__i12_peq__final__sem_apoio__frio.json
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,2,14.516,14.42,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,3,6.1,10.708,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,4,7.146,17.579,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,5,8.859,12.221,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,1,1.232,3.016,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,planos/base__i12_peq__final__sem_apoio__quente.json
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,2,1.186,3.187,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,3,1.873,3.183,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,4,1.25,3.057,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+base,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,5,0.981,2.928,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+reescrita,i02_sem,2,sem,original,sem_apoio,frio,1,16.095,25199.33,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138497,370,1247319,planos/reescrita__i02_sem__original__sem_apoio__frio.json
+reescrita,i02_sem,2,sem,original,sem_apoio,frio,2,30.84,8064.614,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138497,370,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,frio,3,22.063,7722.901,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138497,370,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,frio,4,19.027,7951.318,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138497,370,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,frio,5,22.858,7475.763,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138497,370,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,quente,1,4.216,8983.416,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138395,472,1247319,planos/reescrita__i02_sem__original__sem_apoio__quente.json
+reescrita,i02_sem,2,sem,original,sem_apoio,quente,2,4.527,7452.904,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138348,519,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,quente,3,3.517,9922.773,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138345,522,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,quente,4,12.591,7885.257,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138383,484,1247319,
+reescrita,i02_sem,2,sem,original,sem_apoio,quente,5,4.341,7312.747,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Index Scan video; Seq Scan canal,138313,554,1247319,
+reescrita,i02_com,2,canal,original,sem_apoio,frio,1,20.041,3769.883,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,114137,45,1036,planos/reescrita__i02_com__original__sem_apoio__frio.json
+reescrita,i02_com,2,canal,original,sem_apoio,frio,2,98.227,5069.967,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,114137,45,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,frio,3,20.043,3478.805,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,114137,45,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,frio,4,18.287,3730.1,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,114137,45,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,frio,5,39.444,3484.178,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,114137,45,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,quente,1,3.07,3389.803,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,112948,1234,1036,planos/reescrita__i02_com__original__sem_apoio__quente.json
+reescrita,i02_com,2,canal,original,sem_apoio,quente,2,2.955,6108.979,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,112820,1362,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,quente,3,4.545,3478.594,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,112692,1490,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,quente,4,3.324,3203.287,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,112564,1618,1036,
+reescrita,i02_com,2,canal,original,sem_apoio,quente,5,3.287,3225.817,Seq Scan comentario,Seq Scan comentario; Seq Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key,112436,1746,1036,
+reescrita,i02_sem,2,sem,direta,sem_apoio,frio,1,20.93,14721.952,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,106646,107800,1247319,planos/reescrita__i02_sem__direta__sem_apoio__frio.json
+reescrita,i02_sem,2,sem,direta,sem_apoio,frio,2,26.857,14641.545,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,106646,107800,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,frio,3,21.823,14302.624,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,106646,107800,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,frio,4,20.47,14125.093,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,106646,107800,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,frio,5,182.062,18453.348,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,106646,107800,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,quente,1,28.721,37128.802,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,105884,108562,1247319,planos/reescrita__i02_sem__direta__sem_apoio__quente.json
+reescrita,i02_sem,2,sem,direta,sem_apoio,quente,2,12.803,23900.052,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,105884,108562,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,quente,3,8.082,15615.269,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,105884,108562,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,quente,4,4.924,16016.271,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,105886,108560,1247319,
+reescrita,i02_sem,2,sem,direta,sem_apoio,quente,5,6.829,14855.747,Index Scan canal,Index Scan canal; Index Scan comentario; Index Scan video,105884,108562,1247319,
+reescrita,i02_com,2,canal,direta,sem_apoio,frio,1,25.381,820.169,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,6285,2191,1036,planos/reescrita__i02_com__direta__sem_apoio__frio.json
+reescrita,i02_com,2,canal,direta,sem_apoio,frio,2,19.791,828.161,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,6285,2191,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,frio,3,28.066,922.28,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,6285,2191,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,frio,4,18.5,789.405,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,6285,2191,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,frio,5,18.108,882.061,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,6285,2191,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,quente,1,4.612,104.315,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,8476,1036,planos/reescrita__i02_com__direta__sem_apoio__quente.json
+reescrita,i02_com,2,canal,direta,sem_apoio,quente,2,1.833,105.037,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,8476,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,quente,3,1.549,110.79,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,8476,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,quente,4,1.806,103.648,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,8476,1036,
+reescrita,i02_com,2,canal,direta,sem_apoio,quente,5,1.66,148.983,Index Scan comentario,Index Scan comentario; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,8476,1036,
+reescrita,i03_sem,3,sem,original,sem_apoio,frio,1,24.666,11846.238,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,6,35906,planos/reescrita__i03_sem__original__sem_apoio__frio.json
+reescrita,i03_sem,3,sem,original,sem_apoio,frio,2,24.361,8092.252,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,6,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,frio,3,25.749,5923.869,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,6,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,frio,4,39.213,5963.503,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,6,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,frio,5,27.631,5842.08,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,6,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,quente,1,4.718,5851.673,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84360,863,35906,planos/reescrita__i03_sem__original__sem_apoio__quente.json
+reescrita,i03_sem,3,sem,original,sem_apoio,quente,2,4.631,8883.73,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84264,959,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,quente,3,11.087,6264.004,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84168,1055,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,quente,4,7.316,6412.859,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84072,1151,35906,
+reescrita,i03_sem,3,sem,original,sem_apoio,quente,5,3.473,5744.681,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,83976,1247,35906,
+reescrita,i03_com,3,streamer,original,sem_apoio,frio,1,28.465,10595.992,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,114843,131,2,planos/reescrita__i03_com__original__sem_apoio__frio.json
+reescrita,i03_com,3,streamer,original,sem_apoio,frio,2,27.644,8134.549,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,114843,131,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,frio,3,23.203,6425.237,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,114843,131,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,frio,4,28.86,6482.371,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,114843,131,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,frio,5,24.932,6798.561,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,114843,131,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,quente,1,8.131,7686.965,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,113108,1866,2,planos/reescrita__i03_com__original__sem_apoio__quente.json
+reescrita,i03_com,3,streamer,original,sem_apoio,quente,2,6.294,6324.579,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,113044,1930,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,quente,3,3.798,8575.686,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,112980,1994,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,quente,4,8.967,6178.237,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,112916,2058,2,
+reescrita,i03_com,3,streamer,original,sem_apoio,quente,5,15.258,7605.27,Seq Scan comentario,Seq Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,112852,2122,2,
+reescrita,i03_sem,3,sem,direta,sem_apoio,frio,1,27.498,28823.884,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,12,35906,planos/reescrita__i03_sem__direta__sem_apoio__frio.json
+reescrita,i03_sem,3,sem,direta,sem_apoio,frio,2,34.104,27439.252,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,12,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,frio,3,45.667,29955.239,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,12,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,frio,4,297.657,44497.4,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,12,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,frio,5,77.172,67191.924,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,85217,12,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,quente,1,39.224,80527.81,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84360,869,35906,planos/reescrita__i03_sem__direta__sem_apoio__quente.json
+reescrita,i03_sem,3,sem,direta,sem_apoio,quente,2,44.739,69296.482,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84264,965,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,quente,3,29.708,64554.326,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84168,1061,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,quente,4,25.813,69991.505,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,84072,1157,35906,
+reescrita,i03_sem,3,sem,direta,sem_apoio,quente,5,22.32,46460.78,Seq Scan comentario,Seq Scan comentario; Seq Scan video; Seq Scan usuario; Seq Scan canal,83976,1253,35906,
+reescrita,i03_com,3,streamer,direta,sem_apoio,frio,1,57.722,909.514,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,3610,2396,2,planos/reescrita__i03_com__direta__sem_apoio__frio.json
+reescrita,i03_com,3,streamer,direta,sem_apoio,frio,2,29.441,960.219,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,3610,2396,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,frio,3,89.474,979.066,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,3610,2396,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,frio,4,42.388,1283.899,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,3610,2396,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,frio,5,50.415,1612.1,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,3610,2396,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,quente,1,8.335,645.079,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,0,6006,2,planos/reescrita__i03_com__direta__sem_apoio__quente.json
+reescrita,i03_com,3,streamer,direta,sem_apoio,quente,2,12.203,979.438,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,0,6006,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,quente,3,15.577,516.676,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,0,6006,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,quente,4,33.508,639.842,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,0,6006,2,
+reescrita,i03_com,3,streamer,direta,sem_apoio,quente,5,12.488,1023.232,Index Only Scan comentario,Index Only Scan comentario; Index Scan video; Seq Scan canal; Index Scan usuario,0,6006,2,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,frio,1,63.067,2836.393,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147542,10,planos/reescrita__i10_k10__direta__sem_apoio__frio.json
+reescrita,i10_k10,10,k=10,direta,sem_apoio,frio,2,63.244,1392.473,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147542,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,frio,3,44.517,2408.489,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147542,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,frio,4,44.326,3031.802,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147542,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,frio,5,52.198,2308.5,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147542,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,quente,1,41.337,2551.929,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18997,152354,10,planos/reescrita__i10_k10__direta__sem_apoio__quente.json
+reescrita,i10_k10,10,k=10,direta,sem_apoio,quente,2,8.805,1547.377,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19515,151836,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,quente,3,44.501,1699.624,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20805,150546,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,quente,4,25.269,1813.953,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18946,152405,10,
+reescrita,i10_k10,10,k=10,direta,sem_apoio,quente,5,23.034,3374.989,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19364,151987,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,frio,1,73.984,2754.463,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,10,planos/reescrita__i10_k10__virtual__sem_apoio__frio.json
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,frio,2,68.246,1870.119,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,frio,3,72.174,1569.189,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,frio,4,38.055,1266.346,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,frio,5,62.551,1235.013,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,quente,1,5.667,1274.541,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18991,152363,10,planos/reescrita__i10_k10__virtual__sem_apoio__quente.json
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,quente,2,5.639,1837.403,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19377,151977,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,quente,3,25.25,1048.603,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20922,150432,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,quente,4,4.409,475.058,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18837,152517,10,
+reescrita,i10_k10,10,k=10,virtual,sem_apoio,quente,5,12.771,812.257,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19117,152237,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,frio,1,80.682,4270.847,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,planos/reescrita__i11_k10__direta__sem_apoio__frio.json
+reescrita,i11_k10,11,k=10,direta,sem_apoio,frio,2,102.96,7558.966,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,frio,3,48.669,4021.709,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,frio,4,38.522,3066.865,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,frio,5,58.202,3680.323,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,quente,1,21.084,3955.41,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37340,147537,10,planos/reescrita__i11_k10__direta__sem_apoio__quente.json
+reescrita,i11_k10,11,k=10,direta,sem_apoio,quente,2,12.32,10203.697,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,quente,3,20.374,4465.167,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,quente,4,9.889,3859.509,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37342,147535,10,
+reescrita,i11_k10,11,k=10,direta,sem_apoio,quente,5,14.717,3719.642,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37341,147536,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,frio,1,44.418,3534.11,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,planos/reescrita__i11_k10__virtual__sem_apoio__frio.json
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,frio,2,37.237,4494.677,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,frio,3,36.614,3067.313,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,frio,4,37.003,3311.645,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,frio,5,42.313,3214.609,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,quente,1,15.428,3741.998,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,planos/reescrita__i11_k10__virtual__sem_apoio__quente.json
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,quente,2,12.548,14900.431,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,quente,3,54.121,5649.573,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,quente,4,22.989,6695.031,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37438,147539,10,
+reescrita,i11_k10,11,k=10,virtual,sem_apoio,quente,5,28.207,3692.103,Index Scan video,Index Scan video; Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal,37437,147540,10,
+indices,i01_sem,1,sem,final,btree,frio,1,24.365,1569.281,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,planos/indices__i01_sem__final__btree__frio.json
+indices,i01_sem,1,sem,final,btree,frio,2,28.534,2720.25,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+indices,i01_sem,1,sem,final,btree,frio,3,17.22,2183.662,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+indices,i01_sem,1,sem,final,btree,frio,4,32.6,1394.857,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+indices,i01_sem,1,sem,final,btree,frio,5,22.286,1544.104,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+indices,i01_sem,1,sem,final,btree,quente,1,1.789,1066.153,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27806,799,25108,planos/indices__i01_sem__final__btree__quente.json
+indices,i01_sem,1,sem,final,btree,quente,2,6.816,1888.642,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27742,863,25108,
+indices,i01_sem,1,sem,final,btree,quente,3,3.669,4657.423,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27678,927,25108,
+indices,i01_sem,1,sem,final,btree,quente,4,3.394,1213.767,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27614,991,25108,
+indices,i01_sem,1,sem,final,btree,quente,5,1.294,1467.998,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27550,1055,25108,
+indices,i01_peq,1,plataforma pequena,final,btree,frio,1,44.385,1713.052,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,22443,2999,1252,planos/indices__i01_peq__final__btree__frio.json
+indices,i01_peq,1,plataforma pequena,final,btree,frio,2,90.175,2631.878,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,22443,2999,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,frio,3,18.703,1058.215,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,22443,2999,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,frio,4,18.211,788.923,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,22443,2999,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,frio,5,21.414,1056.474,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,22443,2999,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,quente,1,1.27,269.151,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19783,5659,1252,planos/indices__i01_peq__final__btree__quente.json
+indices,i01_peq,1,plataforma pequena,final,btree,quente,2,1.649,253.869,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19751,5691,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,quente,3,3.111,384.107,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19719,5723,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,quente,4,1.601,250.051,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19687,5755,1252,
+indices,i01_peq,1,plataforma pequena,final,btree,quente,5,1.675,286.18,Seq Scan video,Seq Scan video; Index Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19655,5787,1252,
+indices,i01_grd,1,plataforma grande,final,btree,frio,1,24.448,1162.156,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,28609,6,10092,planos/indices__i01_grd__final__btree__frio.json
+indices,i01_grd,1,plataforma grande,final,btree,frio,2,26.399,1102.903,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,28609,6,10092,
+indices,i01_grd,1,plataforma grande,final,btree,frio,3,22.518,1271.568,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,28609,6,10092,
+indices,i01_grd,1,plataforma grande,final,btree,frio,4,28.203,834.306,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,28609,6,10092,
+indices,i01_grd,1,plataforma grande,final,btree,frio,5,28.775,1507.596,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,28609,6,10092,
+indices,i01_grd,1,plataforma grande,final,btree,quente,1,10.597,730.5,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,27806,809,10092,planos/indices__i01_grd__final__btree__quente.json
+indices,i01_grd,1,plataforma grande,final,btree,quente,2,3.913,518.463,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,27742,873,10092,
+indices,i01_grd,1,plataforma grande,final,btree,quente,3,2.438,581.89,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,27678,937,10092,
+indices,i01_grd,1,plataforma grande,final,btree,quente,4,1.969,862.659,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,27614,1001,10092,
+indices,i01_grd,1,plataforma grande,final,btree,quente,5,3.536,595.46,Seq Scan video,Seq Scan video; Seq Scan usuario; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,27550,1065,10092,
+indices,i02_sem,2,sem,final,btree,frio,1,20.419,37801.185,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,planos/indices__i02_sem__final__btree__frio.json
+indices,i02_sem,2,sem,final,btree,frio,2,77.239,15322.663,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+indices,i02_sem,2,sem,final,btree,frio,3,30.759,11363.627,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+indices,i02_sem,2,sem,final,btree,frio,4,21.643,10298.244,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+indices,i02_sem,2,sem,final,btree,frio,5,18.922,17182.98,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,32224,6,1247319,
+indices,i02_sem,2,sem,final,btree,quente,1,4.923,20442.649,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31430,800,1247319,planos/indices__i02_sem__final__btree__quente.json
+indices,i02_sem,2,sem,final,btree,quente,2,5.125,21540.516,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31366,864,1247319,
+indices,i02_sem,2,sem,final,btree,quente,3,41.221,15616.533,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31302,928,1247319,
+indices,i02_sem,2,sem,final,btree,quente,4,20.169,11225.02,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31238,992,1247319,
+indices,i02_sem,2,sem,final,btree,quente,5,3.704,9169.542,Seq Scan video,Seq Scan video; Seq Scan mv_interacoes_video; Seq Scan canal,31174,1056,1247319,
+indices,i02_com,2,canal,final,btree,frio,1,27.304,354.801,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,planos/indices__i02_com__final__btree__frio.json
+indices,i02_com,2,canal,final,btree,frio,2,18.489,352.8,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+indices,i02_com,2,canal,final,btree,frio,3,18.245,338.584,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+indices,i02_com,2,canal,final,btree,frio,4,19.691,372.66,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+indices,i02_com,2,canal,final,btree,frio,5,17.214,377.623,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+indices,i02_com,2,canal,final,btree,quente,1,1.583,5.318,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,planos/indices__i02_com__final__btree__quente.json
+indices,i02_com,2,canal,final,btree,quente,2,1.54,5.004,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+indices,i02_com,2,canal,final,btree,quente,3,2.84,5.682,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+indices,i02_com,2,canal,final,btree,quente,4,1.767,5.187,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+indices,i02_com,2,canal,final,btree,quente,5,1.466,5.092,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+indices,i03_sem,3,sem,final,btree,frio,1,28.013,928.683,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,planos/indices__i03_sem__final__btree__frio.json
+indices,i03_sem,3,sem,final,btree,frio,2,22.851,905.69,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+indices,i03_sem,3,sem,final,btree,frio,3,70.776,2802.895,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+indices,i03_sem,3,sem,final,btree,frio,4,22.849,817.235,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+indices,i03_sem,3,sem,final,btree,frio,5,28.069,1233.615,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,20464,6,35906,
+indices,i03_sem,3,sem,final,btree,quente,1,3.003,655.705,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19670,800,35906,planos/indices__i03_sem__final__btree__quente.json
+indices,i03_sem,3,sem,final,btree,quente,2,2.552,724.298,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19606,864,35906,
+indices,i03_sem,3,sem,final,btree,quente,3,2.301,656.596,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19542,928,35906,
+indices,i03_sem,3,sem,final,btree,quente,4,3.685,663.184,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19478,992,35906,
+indices,i03_sem,3,sem,final,btree,quente,5,2.443,647.742,Seq Scan mv_interacoes_video,Seq Scan mv_interacoes_video; Seq Scan usuario; Seq Scan canal,19414,1056,35906,
+indices,i03_com,3,streamer,final,btree,frio,1,23.531,147.253,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,882,10,2,planos/indices__i03_com__final__btree__frio.json
+indices,i03_com,3,streamer,final,btree,frio,2,13.378,75.813,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,882,10,2,
+indices,i03_com,3,streamer,final,btree,frio,3,10.849,74.202,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,882,10,2,
+indices,i03_com,3,streamer,final,btree,frio,4,56.486,771.79,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,882,10,2,
+indices,i03_com,3,streamer,final,btree,frio,5,30.342,152.688,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,882,10,2,
+indices,i03_com,3,streamer,final,btree,quente,1,1.942,1.341,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,planos/indices__i03_com__final__btree__quente.json
+indices,i03_com,3,streamer,final,btree,quente,2,1.789,1.314,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+indices,i03_com,3,streamer,final,btree,quente,3,1.858,1.277,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+indices,i03_com,3,streamer,final,btree,quente,4,1.911,1.385,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+indices,i03_com,3,streamer,final,btree,quente,5,2.318,2.035,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+indices,i04_sem,4,sem,final,btree,frio,1,31.445,1387.5,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,planos/indices__i04_sem__final__btree__frio.json
+indices,i04_sem,4,sem,final,btree,frio,2,23.516,734.836,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+indices,i04_sem,4,sem,final,btree,frio,3,47.748,995.842,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+indices,i04_sem,4,sem,final,btree,frio,4,23.729,755.235,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+indices,i04_sem,4,sem,final,btree,frio,5,31.315,754.543,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+indices,i04_sem,4,sem,final,btree,quente,1,3.143,551.017,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18990,152364,7122,planos/indices__i04_sem__final__btree__quente.json
+indices,i04_sem,4,sem,final,btree,quente,2,4.986,948.796,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19590,151764,7122,
+indices,i04_sem,4,sem,final,btree,quente,3,12.521,648.127,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20731,150623,7122,
+indices,i04_sem,4,sem,final,btree,quente,4,3.485,522.923,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18955,152399,7122,
+indices,i04_sem,4,sem,final,btree,quente,5,3.468,2298.009,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19296,152058,7122,
+indices,i04_peq,4,plataforma pequena,final,btree,frio,1,27.09,495.324,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,21258,15,258,planos/indices__i04_peq__final__btree__frio.json
+indices,i04_peq,4,plataforma pequena,final,btree,frio,2,26.717,410.196,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,21258,15,258,
+indices,i04_peq,4,plataforma pequena,final,btree,frio,3,28.484,515.329,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,21258,15,258,
+indices,i04_peq,4,plataforma pequena,final,btree,frio,4,27.939,435.396,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,21258,15,258,
+indices,i04_peq,4,plataforma pequena,final,btree,frio,5,27.832,516.093,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,21258,15,258,
+indices,i04_peq,4,plataforma pequena,final,btree,quente,1,2.982,274.378,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19783,1490,258,planos/indices__i04_peq__final__btree__quente.json
+indices,i04_peq,4,plataforma pequena,final,btree,quente,2,2.084,272.886,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19751,1522,258,
+indices,i04_peq,4,plataforma pequena,final,btree,quente,3,2.007,281.658,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19719,1554,258,
+indices,i04_peq,4,plataforma pequena,final,btree,quente,4,1.842,291.57,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19687,1586,258,
+indices,i04_peq,4,plataforma pequena,final,btree,quente,5,1.792,290.56,Seq Scan video,Seq Scan video; Seq Scan doacao; Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma,19655,1618,258,
+indices,i05_sem,5,sem,final,btree,frio,1,16.804,90.775,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,planos/indices__i05_sem__final__btree__frio.json
+indices,i05_sem,5,sem,final,btree,frio,2,52.093,212.158,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+indices,i05_sem,5,sem,final,btree,frio,3,14.634,87.805,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+indices,i05_sem,5,sem,final,btree,frio,4,8.745,80.204,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+indices,i05_sem,5,sem,final,btree,frio,5,13.276,92.103,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,814,6,18785,
+indices,i05_sem,5,sem,final,btree,quente,1,1.906,77.462,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,planos/indices__i05_sem__final__btree__quente.json
+indices,i05_sem,5,sem,final,btree,quente,2,1.739,89.286,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+indices,i05_sem,5,sem,final,btree,quente,3,1.673,101.338,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+indices,i05_sem,5,sem,final,btree,quente,4,2.513,92.184,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+indices,i05_sem,5,sem,final,btree,quente,5,1.795,91.336,Seq Scan canal,Seq Scan canal; Seq Scan patrocinio; Seq Scan empresa,0,820,18785,
+indices,i05_com,5,empresa,final,btree,frio,1,20.679,26.611,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,planos/indices__i05_com__final__btree__frio.json
+indices,i05_com,5,empresa,final,btree,frio,2,80.568,73.873,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+indices,i05_com,5,empresa,final,btree,frio,3,30.315,62.539,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+indices,i05_com,5,empresa,final,btree,frio,4,46.966,92.913,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+indices,i05_com,5,empresa,final,btree,frio,5,29.688,37.766,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,543,1653,726,
+indices,i05_com,5,empresa,final,btree,quente,1,3.701,4.293,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,planos/indices__i05_com__final__btree__quente.json
+indices,i05_com,5,empresa,final,btree,quente,2,3.728,15.837,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+indices,i05_com,5,empresa,final,btree,quente,3,3.606,3.934,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+indices,i05_com,5,empresa,final,btree,quente,4,1.795,2.778,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+indices,i05_com,5,empresa,final,btree,quente,5,1.661,2.577,Index Scan canal,Index Scan canal; Index Scan patrocinio; Index Scan empresa,0,2196,726,
+indices,i06_sem,6,sem,final,btree,frio,1,33.037,3828.28,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,planos/indices__i06_sem__final__btree__frio.json
+indices,i06_sem,6,sem,final,btree,frio,2,29.918,4254.921,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+indices,i06_sem,6,sem,final,btree,frio,3,50.135,3693.041,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+indices,i06_sem,6,sem,final,btree,frio,4,23.117,3046.049,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+indices,i06_sem,6,sem,final,btree,frio,5,31.265,3533.966,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,13412,6,320684,
+indices,i06_sem,6,sem,final,btree,quente,1,8.908,6671.658,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,8023,5395,320684,planos/indices__i06_sem__final__btree__quente.json
+indices,i06_sem,6,sem,final,btree,quente,2,10.607,4029.825,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7991,5427,320684,
+indices,i06_sem,6,sem,final,btree,quente,3,27.739,7272.58,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7959,5459,320684,
+indices,i06_sem,6,sem,final,btree,quente,4,13.525,4089.751,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7927,5491,320684,
+indices,i06_sem,6,sem,final,btree,quente,5,5.108,3367.529,Seq Scan usuario,Seq Scan usuario; Seq Scan inscricao; Seq Scan nivelcanal; Seq Scan pais,7895,5523,320684,
+indices,i06_com,6,usuario,final,btree,frio,1,40.559,15.059,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,69,1,planos/indices__i06_com__final__btree__frio.json
+indices,i06_com,6,usuario,final,btree,frio,2,32.019,11.851,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,69,1,
+indices,i06_com,6,usuario,final,btree,frio,3,14.719,4.144,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,69,1,
+indices,i06_com,6,usuario,final,btree,frio,4,13.46,4.128,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,69,1,
+indices,i06_com,6,usuario,final,btree,frio,5,19.67,7.179,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,69,1,
+indices,i06_com,6,usuario,final,btree,quente,1,4.229,0.676,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,123,1,planos/indices__i06_com__final__btree__quente.json
+indices,i06_com,6,usuario,final,btree,quente,2,8.903,1.002,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,123,1,
+indices,i06_com,6,usuario,final,btree,quente,3,4.628,2.836,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,123,1,
+indices,i06_com,6,usuario,final,btree,quente,4,10.019,1.792,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,123,1,
+indices,i06_com,6,usuario,final,btree,quente,5,7.489,1.418,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,123,1,
+indices,i07_sem,7,sem,final,btree,frio,1,17.206,925.028,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,planos/indices__i07_sem__final__btree__frio.json
+indices,i07_sem,7,sem,final,btree,frio,2,18.524,582.718,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+indices,i07_sem,7,sem,final,btree,frio,3,22.859,602.224,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+indices,i07_sem,7,sem,final,btree,frio,4,23.186,564.248,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+indices,i07_sem,7,sem,final,btree,frio,5,12.802,811.428,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+indices,i07_sem,7,sem,final,btree,quente,1,6.255,546.852,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18990,152355,7122,planos/indices__i07_sem__final__btree__quente.json
+indices,i07_sem,7,sem,final,btree,quente,2,3.077,391.904,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19623,151722,7122,
+indices,i07_sem,7,sem,final,btree,quente,3,3.08,347.014,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20695,150650,7122,
+indices,i07_sem,7,sem,final,btree,quente,4,3.472,397.603,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18973,152372,7122,
+indices,i07_sem,7,sem,final,btree,quente,5,4.255,471.39,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19347,151998,7122,
+indices,i07_com,7,canal,final,btree,frio,1,26.531,112.902,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,planos/indices__i07_com__final__btree__frio.json
+indices,i07_com,7,canal,final,btree,frio,2,34.64,164.618,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+indices,i07_com,7,canal,final,btree,frio,3,13.0,80.439,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+indices,i07_com,7,canal,final,btree,frio,4,15.93,141.42,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+indices,i07_com,7,canal,final,btree,frio,5,15.118,145.423,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,1507,3150,1,
+indices,i07_com,7,canal,final,btree,quente,1,2.168,4.727,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,planos/indices__i07_com__final__btree__quente.json
+indices,i07_com,7,canal,final,btree,quente,2,1.767,4.534,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+indices,i07_com,7,canal,final,btree,quente,3,2.664,6.256,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+indices,i07_com,7,canal,final,btree,quente,4,2.228,6.289,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+indices,i07_com,7,canal,final,btree,quente,5,2.28,9.026,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan video_canal_titulo_datah_key; Index Scan canal,0,4657,1,
+indices,i08_k10,8,k=10,final,btree,frio,1,38.739,122.487,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/indices__i08_k10__final__btree__frio.json
+indices,i08_k10,8,k=10,final,btree,frio,2,7.32,35.361,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i08_k10,8,k=10,final,btree,frio,3,14.001,56.802,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i08_k10,8,k=10,final,btree,frio,4,7.165,27.53,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i08_k10,8,k=10,final,btree,frio,5,20.289,41.251,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i08_k10,8,k=10,final,btree,quente,1,1.495,13.13,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/indices__i08_k10__final__btree__quente.json
+indices,i08_k10,8,k=10,final,btree,quente,2,1.439,12.637,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i08_k10,8,k=10,final,btree,quente,3,1.391,13.788,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i08_k10,8,k=10,final,btree,quente,4,1.81,14.506,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i08_k10,8,k=10,final,btree,quente,5,1.311,14.799,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i09_k10,9,k=10,final,btree,frio,1,29.06,101.862,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/indices__i09_k10__final__btree__frio.json
+indices,i09_k10,9,k=10,final,btree,frio,2,9.573,33.727,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i09_k10,9,k=10,final,btree,frio,3,9.003,37.991,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i09_k10,9,k=10,final,btree,frio,4,9.079,32.628,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i09_k10,9,k=10,final,btree,frio,5,33.583,36.281,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i09_k10,9,k=10,final,btree,quente,1,1.648,26.396,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/indices__i09_k10__final__btree__quente.json
+indices,i09_k10,9,k=10,final,btree,quente,2,2.437,23.81,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i09_k10,9,k=10,final,btree,quente,3,1.653,26.011,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i09_k10,9,k=10,final,btree,quente,4,2.004,30.668,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i09_k10,9,k=10,final,btree,quente,5,1.351,21.681,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i10_k10,10,k=10,final,btree,frio,1,15.33,36.028,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/indices__i10_k10__final__btree__frio.json
+indices,i10_k10,10,k=10,final,btree,frio,2,8.654,32.934,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i10_k10,10,k=10,final,btree,frio,3,14.659,37.809,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i10_k10,10,k=10,final,btree,frio,4,8.374,33.691,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i10_k10,10,k=10,final,btree,frio,5,7.348,28.329,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i10_k10,10,k=10,final,btree,quente,1,1.629,14.569,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/indices__i10_k10__final__btree__quente.json
+indices,i10_k10,10,k=10,final,btree,quente,2,1.774,13.496,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i10_k10,10,k=10,final,btree,quente,3,1.326,12.792,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i10_k10,10,k=10,final,btree,quente,4,1.373,14.224,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i10_k10,10,k=10,final,btree,quente,5,3.699,17.316,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i11_k10,11,k=10,final,btree,frio,1,12.223,34.339,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,planos/indices__i11_k10__final__btree__frio.json
+indices,i11_k10,11,k=10,final,btree,frio,2,8.68,39.418,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i11_k10,11,k=10,final,btree,frio,3,8.458,32.885,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i11_k10,11,k=10,final,btree,frio,4,7.63,33.936,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i11_k10,11,k=10,final,btree,frio,5,9.78,29.756,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,945,6,10,
+indices,i11_k10,11,k=10,final,btree,quente,1,1.151,23.53,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,planos/indices__i11_k10__final__btree__quente.json
+indices,i11_k10,11,k=10,final,btree,quente,2,1.199,22.749,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i11_k10,11,k=10,final,btree,quente,3,1.151,22.571,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i11_k10,11,k=10,final,btree,quente,4,1.18,24.217,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i11_k10,11,k=10,final,btree,quente,5,1.877,25.105,Seq Scan canal,Seq Scan canal; Seq Scan mv_faturamento_canal,0,951,10,
+indices,i12_sem,12,k=10,anterior,btree,frio,1,30.28,55.029,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,planos/indices__i12_sem__final__btree__frio.json
+indices,i12_sem,12,k=10,anterior,btree,frio,2,12.982,53.66,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+indices,i12_sem,12,k=10,anterior,btree,frio,3,6.18,53.058,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+indices,i12_sem,12,k=10,anterior,btree,frio,4,153.9,341.303,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+indices,i12_sem,12,k=10,anterior,btree,frio,5,16.607,81.54,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+indices,i12_sem,12,k=10,anterior,btree,quente,1,1.097,46.601,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,planos/indices__i12_sem__final__btree__quente.json
+indices,i12_sem,12,k=10,anterior,btree,quente,2,1.112,46.539,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+indices,i12_sem,12,k=10,anterior,btree,quente,3,1.283,52.3,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+indices,i12_sem,12,k=10,anterior,btree,quente,4,1.417,45.242,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+indices,i12_sem,12,k=10,anterior,btree,quente,5,1.849,45.165,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,frio,1,22.98,40.437,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,582,6,1,planos/indices__i12_peq__final__btree__frio.json
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,frio,2,9.461,50.366,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,582,6,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,frio,3,12.072,68.835,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,582,6,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,frio,4,119.576,304.912,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,582,6,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,frio,5,42.748,86.424,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,582,6,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,quente,1,2.893,4.852,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,0,588,1,planos/indices__i12_peq__final__btree__quente.json
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,quente,2,6.401,24.789,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,0,588,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,quente,3,1.649,2.548,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,0,588,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,quente,4,3.979,7.009,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,0,588,1,
+indices,i12_peq,12,"k=10, plataforma pequena",anterior,btree,quente,5,1.503,4.42,Bitmap Heap Scan canal,Bitmap Heap Scan canal; Bitmap Index Scan idx_canal_nro_plataforma; Seq Scan plataforma,0,588,1,
+hash,i03_com,3,streamer,final,hash,frio,1,21.884,169.864,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,883,9,2,planos/hash__i03_com__final__hash__frio.json
+hash,i03_com,3,streamer,final,hash,frio,2,18.885,184.119,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,883,9,2,
+hash,i03_com,3,streamer,final,hash,frio,3,12.78,99.014,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,883,9,2,
+hash,i03_com,3,streamer,final,hash,frio,4,70.648,564.577,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,883,9,2,
+hash,i03_com,3,streamer,final,hash,frio,5,19.996,106.678,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,883,9,2,
+hash,i03_com,3,streamer,final,hash,quente,1,4.141,1.861,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,planos/hash__i03_com__final__hash__quente.json
+hash,i03_com,3,streamer,final,hash,quente,2,1.982,1.428,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+hash,i03_com,3,streamer,final,hash,quente,3,1.784,1.371,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+hash,i03_com,3,streamer,final,hash,quente,4,2.101,1.276,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+hash,i03_com,3,streamer,final,hash,quente,5,1.786,1.328,Bitmap Heap Scan mv_interacoes_video,Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan usuario; Index Scan canal,0,892,2,
+hash,i06_com,6,usuario,final,hash,frio,1,37.421,53.588,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,68,1,planos/hash__i06_com__final__hash__frio.json
+hash,i06_com,6,usuario,final,hash,frio,2,12.959,2.585,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,68,1,
+hash,i06_com,6,usuario,final,hash,frio,3,44.229,37.583,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,68,1,
+hash,i06_com,6,usuario,final,hash,frio,4,70.964,7.578,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,68,1,
+hash,i06_com,6,usuario,final,hash,frio,5,23.498,36.825,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,54,68,1,
+hash,i06_com,6,usuario,final,hash,quente,1,2.126,0.368,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,122,1,planos/hash__i06_com__final__hash__quente.json
+hash,i06_com,6,usuario,final,hash,quente,2,2.449,0.499,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,122,1,
+hash,i06_com,6,usuario,final,hash,quente,3,4.061,0.631,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,122,1,
+hash,i06_com,6,usuario,final,hash,quente,4,29.08,5.765,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,122,1,
+hash,i06_com,6,usuario,final,hash,quente,5,6.914,2.208,Index Scan nivelcanal,Index Scan nivelcanal; Index Scan conversao; Bitmap Heap Scan inscricao; Index Scan usuario,0,122,1,
+final,i01_sem,1,sem,final,final,frio,1,32.312,2197.746,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,planos/final__i01_sem__final__final__frio.json
+final,i01_sem,1,sem,final,final,frio,2,43.812,2491.599,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+final,i01_sem,1,sem,final,final,frio,3,18.752,1679.766,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+final,i01_sem,1,sem,final,final,frio,4,21.401,1160.618,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+final,i01_sem,1,sem,final,final,frio,5,23.819,3044.644,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,25108,
+final,i01_sem,1,sem,final,final,quente,1,3.35,1148.808,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27806,799,25108,planos/final__i01_sem__final__final__quente.json
+final,i01_sem,1,sem,final,final,quente,2,1.63,1066.477,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27742,863,25108,
+final,i01_sem,1,sem,final,final,quente,3,3.858,1128.385,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27678,927,25108,
+final,i01_sem,1,sem,final,final,quente,4,1.343,937.558,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27614,991,25108,
+final,i01_sem,1,sem,final,final,quente,5,2.623,980.96,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27550,1055,25108,
+final,i01_peq,1,plataforma pequena,final,final,frio,1,28.351,484.011,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,3862,5668,1252,planos/final__i01_peq__final__final__frio.json
+final,i01_peq,1,plataforma pequena,final,final,frio,2,18.383,326.415,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,3862,5668,1252,
+final,i01_peq,1,plataforma pequena,final,final,frio,3,57.563,840.953,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,3862,5668,1252,
+final,i01_peq,1,plataforma pequena,final,final,frio,4,10.377,305.213,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,3862,5668,1252,
+final,i01_peq,1,plataforma pequena,final,final,frio,5,11.36,340.743,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,3862,5668,1252,
+final,i01_peq,1,plataforma pequena,final,final,quente,1,1.736,22.082,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,0,9530,1252,planos/final__i01_peq__final__final__quente.json
+final,i01_peq,1,plataforma pequena,final,final,quente,2,1.516,23.71,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,0,9530,1252,
+final,i01_peq,1,plataforma pequena,final,final,quente,3,1.396,22.687,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,0,9530,1252,
+final,i01_peq,1,plataforma pequena,final,final,quente,4,1.461,19.775,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,0,9530,1252,
+final,i01_peq,1,plataforma pequena,final,final,quente,5,1.464,20.059,Index Scan usuario,Index Scan usuario; Index Only Scan video; Seq Scan canal,0,9530,1252,
+final,i01_grd,1,plataforma grande,final,final,frio,1,9.427,1102.586,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,planos/final__i01_grd__final__final__frio.json
+final,i01_grd,1,plataforma grande,final,final,frio,2,11.553,622.51,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+final,i01_grd,1,plataforma grande,final,final,frio,3,16.225,638.388,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+final,i01_grd,1,plataforma grande,final,final,frio,4,11.866,681.165,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+final,i01_grd,1,plataforma grande,final,final,frio,5,19.745,675.141,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,28599,6,10092,
+final,i01_grd,1,plataforma grande,final,final,quente,1,2.678,489.332,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27806,799,10092,planos/final__i01_grd__final__final__quente.json
+final,i01_grd,1,plataforma grande,final,final,quente,2,3.57,627.311,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27742,863,10092,
+final,i01_grd,1,plataforma grande,final,final,quente,3,1.802,453.915,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27678,927,10092,
+final,i01_grd,1,plataforma grande,final,final,quente,4,2.476,474.035,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27614,991,10092,
+final,i01_grd,1,plataforma grande,final,final,quente,5,1.586,460.198,Seq Scan video,Seq Scan video; Seq Scan usuario; Seq Scan canal,27550,1055,10092,
+final,i02_com,2,canal,final,final,frio,1,15.071,245.702,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,planos/final__i02_com__final__final__frio.json
+final,i02_com,2,canal,final,final,frio,2,10.126,157.084,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+final,i02_com,2,canal,final,final,frio,3,10.085,129.063,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+final,i02_com,2,canal,final,final,frio,4,33.094,214.014,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+final,i02_com,2,canal,final,final,frio,5,9.651,150.354,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,2539,2482,1036,
+final,i02_com,2,canal,final,final,quente,1,2.148,8.073,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,planos/final__i02_com__final__final__quente.json
+final,i02_com,2,canal,final,final,quente,2,1.453,5.135,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+final,i02_com,2,canal,final,final,quente,3,1.535,4.907,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+final,i02_com,2,canal,final,final,quente,4,1.502,5.091,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+final,i02_com,2,canal,final,final,quente,5,1.569,5.111,Index Scan video,Index Scan video; Bitmap Heap Scan mv_interacoes_video; Bitmap Index Scan ux_mv_interacoes_video; Index Scan canal,0,5021,1036,
+final,i04_sem,4,sem,final,final,frio,1,14.251,1359.618,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,planos/final__i04_sem__final__final__frio.json
+final,i04_sem,4,sem,final,final,frio,2,22.853,892.499,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+final,i04_sem,4,sem,final,final,frio,3,18.478,801.99,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+final,i04_sem,4,sem,final,final,frio,4,12.834,783.83,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+final,i04_sem,4,sem,final,final,frio,5,13.818,888.479,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147545,7122,
+final,i04_sem,4,sem,final,final,quente,1,7.298,670.662,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18989,152365,7122,planos/final__i04_sem__final__final__quente.json
+final,i04_sem,4,sem,final,final,quente,2,3.292,507.233,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19613,151741,7122,
+final,i04_sem,4,sem,final,final,quente,3,4.056,845.277,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20703,150651,7122,
+final,i04_sem,4,sem,final,final,quente,4,3.965,509.504,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18966,152388,7122,
+final,i04_sem,4,sem,final,final,quente,5,23.996,950.855,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19304,152050,7122,
+final,i04_peq,4,plataforma pequena,final,final,frio,1,13.782,387.978,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,planos/final__i04_peq__final__final__frio.json
+final,i04_peq,4,plataforma pequena,final,final,frio,2,13.119,402.574,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+final,i04_peq,4,plataforma pequena,final,final,frio,3,11.477,339.634,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+final,i04_peq,4,plataforma pequena,final,final,frio,4,14.088,358.095,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+final,i04_peq,4,plataforma pequena,final,final,frio,5,22.234,534.265,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,21342,15,258,
+final,i04_peq,4,plataforma pequena,final,final,quente,1,2.819,299.087,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19783,1574,258,planos/final__i04_peq__final__final__quente.json
+final,i04_peq,4,plataforma pequena,final,final,quente,2,2.856,323.582,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19751,1606,258,
+final,i04_peq,4,plataforma pequena,final,final,quente,3,1.848,286.375,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19719,1638,258,
+final,i04_peq,4,plataforma pequena,final,final,quente,4,2.37,296.166,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19687,1670,258,
+final,i04_peq,4,plataforma pequena,final,final,quente,5,1.799,275.582,Seq Scan video,Seq Scan video; Seq Scan doacao; Seq Scan canal,19655,1702,258,
+final,i07_sem,7,sem,final,final,frio,1,15.409,552.424,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,planos/final__i07_sem__final__final__frio.json
+final,i07_sem,7,sem,final,final,frio,2,13.104,535.075,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+final,i07_sem,7,sem,final,final,frio,3,10.119,622.845,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+final,i07_sem,7,sem,final,final,frio,4,20.434,545.004,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+final,i07_sem,7,sem,final,final,frio,5,12.638,556.997,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,23809,147536,7122,
+final,i07_sem,7,sem,final,final,quente,1,3.084,438.651,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18994,152351,7122,planos/final__i07_sem__final__final__quente.json
+final,i07_sem,7,sem,final,final,quente,2,3.553,346.47,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19658,151687,7122,
+final,i07_sem,7,sem,final,final,quente,3,3.397,367.59,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,20644,150701,7122,
+final,i07_sem,7,sem,final,final,quente,4,3.059,290.891,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,18999,152346,7122,
+final,i07_sem,7,sem,final,final,quente,5,2.772,314.635,Index Scan video,Index Scan video; Seq Scan doacao; Seq Scan canal,19385,151960,7122,
+final,i07_com,7,canal,final,final,frio,1,41.088,189.24,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,1502,3150,1,planos/final__i07_com__final__final__frio.json
+final,i07_com,7,canal,final,final,frio,2,14.555,95.674,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,1502,3150,1,
+final,i07_com,7,canal,final,final,frio,3,14.946,98.792,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,1502,3150,1,
+final,i07_com,7,canal,final,final,frio,4,13.647,88.285,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,1502,3150,1,
+final,i07_com,7,canal,final,final,frio,5,53.655,344.188,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,1502,3150,1,
+final,i07_com,7,canal,final,final,quente,1,3.953,7.276,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,0,4652,1,planos/final__i07_com__final__final__quente.json
+final,i07_com,7,canal,final,final,quente,2,2.778,5.145,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,0,4652,1,
+final,i07_com,7,canal,final,final,quente,3,2.895,7.189,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,0,4652,1,
+final,i07_com,7,canal,final,final,quente,4,2.271,6.609,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,0,4652,1,
+final,i07_com,7,canal,final,final,quente,5,2.202,5.16,Index Scan doacao,Index Scan doacao; Bitmap Heap Scan video; Bitmap Index Scan idx_video_id_canal_cobertura; Index Scan canal,0,4652,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,frio,1,12.282,13.145,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,planos/final__i12_peq__final__final__frio.json
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,frio,2,18.859,34.407,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,frio,3,14.954,19.166,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,frio,4,6.704,7.892,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,frio,5,31.72,24.939,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,quente,1,2.462,4.763,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,planos/final__i12_peq__final__final__quente.json
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,quente,2,5.902,9.557,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,quente,3,9.435,12.177,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,quente,4,2.448,6.406,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+final,i12_peq,12,"k=10, plataforma pequena",anterior,final,quente,5,1.583,5.562,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_sem,12,k=10,final,sem_apoio,frio,1,0.055,139.143,Function Scan,,776,662,10,planos/item12__i12_sem__final__sem_apoio__frio.json
+item12,i12_sem,12,k=10,final,sem_apoio,frio,2,0.402,540.178,Function Scan,,776,662,10,
+item12,i12_sem,12,k=10,final,sem_apoio,frio,3,0.091,174.366,Function Scan,,776,662,10,
+item12,i12_sem,12,k=10,final,sem_apoio,frio,4,0.048,83.126,Function Scan,,776,662,10,
+item12,i12_sem,12,k=10,final,sem_apoio,frio,5,0.062,103.712,Function Scan,,776,662,10,
+item12,i12_sem,12,k=10,final,sem_apoio,quente,1,0.133,188.222,Function Scan,,0,1438,10,planos/item12__i12_sem__final__sem_apoio__quente.json
+item12,i12_sem,12,k=10,final,sem_apoio,quente,2,0.118,58.125,Function Scan,,0,1438,10,
+item12,i12_sem,12,k=10,final,sem_apoio,quente,3,0.067,67.803,Function Scan,,0,1438,10,
+item12,i12_sem,12,k=10,final,sem_apoio,quente,4,0.064,66.847,Function Scan,,0,1438,10,
+item12,i12_sem,12,k=10,final,sem_apoio,quente,5,0.07,43.695,Function Scan,,0,1438,10,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,frio,1,0.076,99.089,Function Scan,,776,659,1,planos/item12__i12_peq__final__sem_apoio__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,frio,2,0.049,61.172,Function Scan,,776,659,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,frio,3,0.128,133.776,Function Scan,,776,659,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,frio,4,0.047,89.225,Function Scan,,776,659,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,frio,5,0.041,117.644,Function Scan,,776,659,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,quente,1,0.045,55.421,Function Scan,,0,1435,1,planos/item12__i12_peq__final__sem_apoio__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,quente,2,0.042,47.268,Function Scan,,0,1435,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,quente,3,0.045,44.786,Function Scan,,0,1435,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,quente,4,0.059,55.236,Function Scan,,0,1435,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,sem_apoio,quente,5,0.042,42.322,Function Scan,,0,1435,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,frio,1,0.062,62.481,Function Scan,,776,659,1,planos/item12__i12_grd__final__sem_apoio__frio.json
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,frio,2,0.04,96.81,Function Scan,,776,659,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,frio,3,0.063,63.938,Function Scan,,776,659,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,frio,4,0.081,67.107,Function Scan,,776,659,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,frio,5,0.361,166.984,Function Scan,,776,659,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,quente,1,0.076,80.754,Function Scan,,0,1435,1,planos/item12__i12_grd__final__sem_apoio__quente.json
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,quente,2,0.214,81.901,Function Scan,,0,1435,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,quente,3,0.049,51.577,Function Scan,,0,1435,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,quente,4,0.047,44.28,Function Scan,,0,1435,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,sem_apoio,quente,5,0.069,62.098,Function Scan,,0,1435,1,
+item12,i12_sem,12,k=10,anterior,sem_apoio,frio,1,10.661,73.926,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,planos/item12__i12_sem__anterior__sem_apoio__frio.json
+item12,i12_sem,12,k=10,anterior,sem_apoio,frio,2,7.555,52.485,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,frio,3,15.081,56.748,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,frio,4,21.341,104.486,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,frio,5,8.259,54.553,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,9,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,quente,1,1.679,250.785,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,planos/item12__i12_sem__anterior__sem_apoio__quente.json
+item12,i12_sem,12,k=10,anterior,sem_apoio,quente,2,5.364,73.007,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,quente,3,1.643,90.968,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,quente,4,1.998,99.059,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+item12,i12_sem,12,k=10,anterior,sem_apoio,quente,5,3.311,72.398,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,675,10,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,1,8.871,14.867,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,planos/item12__i12_peq__anterior__sem_apoio__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,2,21.402,69.64,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,3,8.301,13.715,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,4,146.327,123.102,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,frio,5,38.919,56.432,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,1,3.514,6.088,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,planos/item12__i12_peq__anterior__sem_apoio__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,2,1.424,4.66,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,3,1.347,4.643,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,4,7.256,4.765,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_peq,12,"k=10, plataforma pequena",anterior,sem_apoio,quente,5,35.445,38.945,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,frio,1,11.362,23.262,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,planos/item12__i12_grd__anterior__sem_apoio__frio.json
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,frio,2,6.283,31.247,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,frio,3,11.999,16.585,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,frio,4,50.552,37.549,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,frio,5,13.463,34.004,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,666,6,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,quente,1,1.446,10.818,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,planos/item12__i12_grd__anterior__sem_apoio__quente.json
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,quente,2,2.961,15.282,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,quente,3,1.734,11.685,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,quente,4,1.958,12.967,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_grd,12,"k=10, plataforma grande",anterior,sem_apoio,quente,5,6.551,32.707,Seq Scan canal,Seq Scan canal; Seq Scan plataforma,0,672,1,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,frio,1,0.068,62.799,Function Scan,,763,619,10,planos/item12__i12_sem__v5_virtual__sem_apoio__frio.json
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,frio,2,0.047,73.413,Function Scan,,763,619,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,frio,3,0.054,76.245,Function Scan,,763,619,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,frio,4,0.043,75.58,Function Scan,,763,619,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,frio,5,0.127,70.692,Function Scan,,763,619,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,quente,1,0.06,44.141,Function Scan,,0,1382,10,planos/item12__i12_sem__v5_virtual__sem_apoio__quente.json
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,quente,2,0.075,45.819,Function Scan,,0,1382,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,quente,3,0.124,51.16,Function Scan,,0,1382,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,quente,4,0.059,47.352,Function Scan,,0,1382,10,
+item12,i12_sem,12,k=10,v5_virtual,sem_apoio,quente,5,0.043,40.839,Function Scan,,0,1382,10,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,frio,1,0.913,117.566,Function Scan,,763,615,1,planos/item12__i12_peq__v5_virtual__sem_apoio__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,frio,2,0.052,62.693,Function Scan,,763,615,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,frio,3,0.072,72.164,Function Scan,,763,615,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,frio,4,0.056,60.93,Function Scan,,763,615,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,frio,5,0.061,61.079,Function Scan,,763,615,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,quente,1,0.044,42.132,Function Scan,,0,1378,1,planos/item12__i12_peq__v5_virtual__sem_apoio__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,quente,2,0.053,40.752,Function Scan,,0,1378,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,quente,3,0.038,42.95,Function Scan,,0,1378,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,quente,4,0.051,40.775,Function Scan,,0,1378,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_virtual,sem_apoio,quente,5,0.038,40.653,Function Scan,,0,1378,1,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,frio,1,0.093,15.149,Function Scan,,55,247,10,planos/item12__i12_sem__v5_mat__sem_apoio__frio.json
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,frio,2,0.145,32.557,Function Scan,,55,247,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,frio,3,0.038,8.815,Function Scan,,55,247,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,frio,4,0.068,7.794,Function Scan,,55,247,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,frio,5,0.049,10.29,Function Scan,,55,247,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,quente,1,0.047,1.223,Function Scan,,0,302,10,planos/item12__i12_sem__v5_mat__sem_apoio__quente.json
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,quente,2,0.042,1.185,Function Scan,,0,302,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,quente,3,0.063,1.084,Function Scan,,0,302,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,quente,4,0.045,1.258,Function Scan,,0,302,10,
+item12,i12_sem,12,k=10,v5_mat,sem_apoio,quente,5,0.054,1.166,Function Scan,,0,302,10,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,frio,1,0.04,7.787,Function Scan,,55,248,1,planos/item12__i12_peq__v5_mat__sem_apoio__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,frio,2,0.047,9.233,Function Scan,,55,248,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,frio,3,0.057,8.846,Function Scan,,55,248,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,frio,4,0.041,8.177,Function Scan,,55,248,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,frio,5,0.053,8.135,Function Scan,,55,248,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,quente,1,0.052,1.866,Function Scan,,0,303,1,planos/item12__i12_peq__v5_mat__sem_apoio__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,quente,2,0.064,1.278,Function Scan,,0,303,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,quente,3,0.041,1.231,Function Scan,,0,303,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,quente,4,0.041,1.38,Function Scan,,0,303,1,
+item12,i12_peq,12,"k=10, plataforma pequena",v5_mat,sem_apoio,quente,5,0.076,1.208,Function Scan,,0,303,1,
+item12,i12_sem,12,k=10,final,final,frio,1,0.061,88.839,Function Scan,,779,671,10,planos/item12__i12_sem__final__final__frio.json
+item12,i12_sem,12,k=10,final,final,frio,2,0.051,62.439,Function Scan,,779,671,10,
+item12,i12_sem,12,k=10,final,final,frio,3,0.059,66.935,Function Scan,,779,671,10,
+item12,i12_sem,12,k=10,final,final,frio,4,0.054,64.024,Function Scan,,779,671,10,
+item12,i12_sem,12,k=10,final,final,frio,5,0.08,58.892,Function Scan,,779,671,10,
+item12,i12_sem,12,k=10,final,final,quente,1,0.087,48.352,Function Scan,,0,1450,10,planos/item12__i12_sem__final__final__quente.json
+item12,i12_sem,12,k=10,final,final,quente,2,0.137,66.795,Function Scan,,0,1450,10,
+item12,i12_sem,12,k=10,final,final,quente,3,0.091,119.216,Function Scan,,0,1450,10,
+item12,i12_sem,12,k=10,final,final,quente,4,0.103,66.567,Function Scan,,0,1450,10,
+item12,i12_sem,12,k=10,final,final,quente,5,0.044,46.869,Function Scan,,0,1450,10,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,frio,1,0.045,63.956,Function Scan,,779,668,1,planos/item12__i12_peq__final__final__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,frio,2,0.039,59.462,Function Scan,,779,668,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,frio,3,0.044,67.45,Function Scan,,779,668,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,frio,4,0.052,67.124,Function Scan,,779,668,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,frio,5,0.072,82.076,Function Scan,,779,668,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,quente,1,0.052,42.637,Function Scan,,0,1447,1,planos/item12__i12_peq__final__final__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,quente,2,0.05,42.251,Function Scan,,0,1447,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,quente,3,0.053,47.032,Function Scan,,0,1447,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,quente,4,0.063,45.241,Function Scan,,0,1447,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final,quente,5,0.057,41.899,Function Scan,,0,1447,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,frio,1,0.041,61.621,Function Scan,,779,668,1,planos/item12__i12_grd__final__final__frio.json
+item12,i12_grd,12,"k=10, plataforma grande",final,final,frio,2,0.057,58.557,Function Scan,,779,668,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,frio,3,0.054,70.703,Function Scan,,779,668,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,frio,4,0.051,62.101,Function Scan,,779,668,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,frio,5,0.039,64.665,Function Scan,,779,668,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,quente,1,0.037,42.358,Function Scan,,0,1447,1,planos/item12__i12_grd__final__final__quente.json
+item12,i12_grd,12,"k=10, plataforma grande",final,final,quente,2,0.042,43.526,Function Scan,,0,1447,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,quente,3,0.037,41.443,Function Scan,,0,1447,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,quente,4,0.047,42.777,Function Scan,,0,1447,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final,quente,5,0.037,41.784,Function Scan,,0,1447,1,
+item12,i12_sem,12,k=10,final,final_item12,frio,1,0.11,121.715,Function Scan,,780,688,10,planos/item12__i12_sem__final__final_item12__frio.json
+item12,i12_sem,12,k=10,final,final_item12,frio,2,0.049,72.237,Function Scan,,780,688,10,
+item12,i12_sem,12,k=10,final,final_item12,frio,3,0.044,66.199,Function Scan,,780,688,10,
+item12,i12_sem,12,k=10,final,final_item12,frio,4,0.052,65.628,Function Scan,,780,688,10,
+item12,i12_sem,12,k=10,final,final_item12,frio,5,0.051,60.77,Function Scan,,780,688,10,
+item12,i12_sem,12,k=10,final,final_item12,quente,1,0.089,95.805,Function Scan,,0,1468,10,planos/item12__i12_sem__final__final_item12__quente.json
+item12,i12_sem,12,k=10,final,final_item12,quente,2,0.135,47.723,Function Scan,,0,1468,10,
+item12,i12_sem,12,k=10,final,final_item12,quente,3,0.076,53.44,Function Scan,,0,1468,10,
+item12,i12_sem,12,k=10,final,final_item12,quente,4,0.053,44.828,Function Scan,,0,1468,10,
+item12,i12_sem,12,k=10,final,final_item12,quente,5,0.05,48.878,Function Scan,,0,1468,10,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,frio,1,0.066,74.658,Function Scan,,780,685,1,planos/item12__i12_peq__final__final_item12__frio.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,frio,2,0.056,61.976,Function Scan,,780,685,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,frio,3,0.086,65.066,Function Scan,,780,685,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,frio,4,0.059,59.664,Function Scan,,780,685,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,frio,5,0.081,68.587,Function Scan,,780,685,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,quente,1,0.167,97.287,Function Scan,,0,1465,1,planos/item12__i12_peq__final__final_item12__quente.json
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,quente,2,0.138,54.195,Function Scan,,0,1465,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,quente,3,0.056,57.159,Function Scan,,0,1465,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,quente,4,0.085,72.535,Function Scan,,0,1465,1,
+item12,i12_peq,12,"k=10, plataforma pequena",final,final_item12,quente,5,0.215,83.994,Function Scan,,0,1465,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,frio,1,0.065,79.423,Function Scan,,780,685,1,planos/item12__i12_grd__final__final_item12__frio.json
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,frio,2,0.044,64.592,Function Scan,,780,685,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,frio,3,0.054,67.437,Function Scan,,780,685,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,frio,4,0.052,70.557,Function Scan,,780,685,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,frio,5,0.06,64.87,Function Scan,,780,685,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,quente,1,0.036,41.47,Function Scan,,0,1465,1,planos/item12__i12_grd__final__final_item12__quente.json
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,quente,2,0.047,140.976,Function Scan,,0,1465,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,quente,3,0.054,46.859,Function Scan,,0,1465,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,quente,4,0.039,44.333,Function Scan,,0,1465,1,
+item12,i12_grd,12,"k=10, plataforma grande",final,final_item12,quente,5,0.052,41.483,Function Scan,,0,1465,1,
