@@ -43,10 +43,12 @@
 --   * Reprodutível: setseed(0.42), sem paralelismo e fuso UTC. A exceção
 --     são os UUIDs dos vídeos, gerados pela função nativa gen_random_uuid(),
 --     que não obedece ao setseed. Por isso nenhum sorteio depende da ordem
---     dos UUIDs: onde a ordem dos vídeos importa, o seed usa a coluna "ord"
---     (canal, número do vídeo), que é a mesma a cada carga. Os volumes,
---     nomes, valores e distribuições se repetem; mudam só os UUIDs e o que
---     deriva deles (TxID, IdPayPal e número do cartão).
+--     dos UUIDs: os vídeos são percorridos em ordem de (canal, número do
+--     vídeo) e os comentários em ordem de (data, canal, número do vídeo),
+--     que são as mesmas a cada carga. Os volumes, nomes, valores e
+--     distribuições se repetem; mudam só os UUIDs e o que deriva deles
+--     (TxID, IdPayPal e número do cartão). Conferido com duas cargas
+--     seguidas: dados idênticos, exceto os UUIDs.
 --   * Inserção por conjunto (generate_series, JOIN, LATERAL); nenhum laço
 --     linha a linha.
 --   * Chaves de identidade (Empresa.nro, Plataforma.nro, Usuario.id_usuario,
@@ -760,20 +762,26 @@ WHERE c.nome = t.nome AND c.nro_plataforma = t.nro_plataforma;
 -- A inserção segue a ordem de id_video, a da PK, para a árvore ser
 -- montada em sequência mesmo com ids aleatórios.
 -- Título com "#n" garante o UNIQUE (id_canal, titulo, dataH).
+-- Cuidado: o PostgreSQL avalia funções voláteis da lista do SELECT, como
+--   random(), DEPOIS do ORDER BY. Por isso o título é sorteado aqui, com
+--   ORDER BY (canal, número do vídeo), e não no INSERT ordenado por
+--   id_video: lá o sorteio seguiria a ordem dos UUIDs e mudaria a cada carga.
+--   O ORDER BY também fixa a ordem física desta tabela temporária, que os
+--   passos seguintes (Participa, Comentario) percorrem.
 CREATE TEMP TABLE tmp_video_id ON COMMIT DROP AS
 SELECT gen_random_uuid() AS id_video,
        c.id_canal, c.k AS k_canal, c.nro_plataforma, c.formato, c.limite, c.id_streamer, c.pop,
-       v.n_video, v.curto, v.dataH, v.duracao, v.tema, v.visu_total, v.visu_simul
+       v.n_video, v.curto, v.dataH, v.duracao, v.tema, v.visu_total, v.visu_simul,
+       CASE WHEN v.curto THEN (ARRAY['Clipe','Jogada','Fail','Highlight','Momento'])[1 + floor(random() * 5)::int]
+            ELSE (ARRAY['Live','Gameplay','Rankeada','Campeonato','Tutorial','Zerando'])[1 + floor(random() * 6)::int]
+       END || ' de ' || v.tema || ' #' || v.n_video AS titulo
 FROM tmp_video v
-JOIN tmp_canal c ON c.k = v.k_canal;
+JOIN tmp_canal c ON c.k = v.k_canal
+ORDER BY c.k, v.n_video;
 ANALYZE tmp_video_id;
 
 INSERT INTO steam_do_bedo.Video (id_video, id_canal, titulo, dataH, tema, duracao, visu_simul, visu_total)
-SELECT id_video, id_canal,
-       CASE WHEN curto THEN (ARRAY['Clipe','Jogada','Fail','Highlight','Momento'])[1 + floor(random() * 5)::int]
-            ELSE (ARRAY['Live','Gameplay','Rankeada','Campeonato','Tutorial','Zerando'])[1 + floor(random() * 6)::int]
-       END || ' de ' || tema || ' #' || n_video,
-       dataH, tema, duracao, visu_simul, visu_total
+SELECT id_video, id_canal, titulo, dataH, tema, duracao, visu_simul, visu_total
 FROM tmp_video_id
 ORDER BY id_video;
 ANALYZE steam_do_bedo.video, steam_do_bedo.canal;
