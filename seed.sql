@@ -40,8 +40,13 @@
 -- Garantias:
 --   * Parte de banco virgem: aborta se alguma tabela tiver linhas.
 --   * ON_ERROR_STOP e uma transação só: qualquer erro desfaz tudo.
---   * Reprodutível: setseed(0.42), sem paralelismo, fuso UTC e UUID de
---     vídeo derivado de dados determinísticos (não de gen_random_uuid).
+--   * Reprodutível: setseed(0.42), sem paralelismo e fuso UTC. A exceção
+--     são os UUIDs dos vídeos, gerados pela função nativa gen_random_uuid(),
+--     que não obedece ao setseed. Por isso nenhum sorteio depende da ordem
+--     dos UUIDs: onde a ordem dos vídeos importa, o seed usa a coluna "ord"
+--     (canal, número do vídeo), que é a mesma a cada carga. Os volumes,
+--     nomes, valores e distribuições se repetem; mudam só os UUIDs e o que
+--     deriva deles (TxID, IdPayPal e número do cartão).
 --   * Inserção por conjunto (generate_series, JOIN, LATERAL); nenhum laço
 --     linha a linha.
 --   * Chaves de identidade (Empresa.nro, Plataforma.nro, Usuario.id_usuario,
@@ -165,21 +170,6 @@ $$ SELECT sqrt(-2 * ln(1 - random())) * cos(2 * pi() * random()) $$;
 CREATE FUNCTION pg_temp.potencia(n bigint, a double precision) RETURNS bigint
 LANGUAGE sql VOLATILE AS
 $$ SELECT 1 + floor(n * power(random(), a))::bigint $$;
-
--- UUID v7 determinístico: 48 bits do instante (ms) + 80 bits do md5 de uma
--- semente, com os bits de versão (0111) e variante (10) acertados.
--- Mesmo formato do steam_do_bedo.uuid_v7() (DEC-021), mas reprodutível,
--- porque gen_random_uuid() não obedece ao setseed.
-CREATE FUNCTION pg_temp.uuid_v7_det(ts timestamptz, semente text) RETURNS uuid
-LANGUAGE sql IMMUTABLE AS $$
-    SELECT encode(
-             set_byte(set_byte(
-               substring(int8send(floor(extract(epoch FROM ts) * 1000)::bigint) FROM 3)
-               || substring(decode(md5(semente), 'hex') FROM 1 FOR 10),
-               6, (get_byte(decode(md5(semente), 'hex'), 0) & 15) | 112),
-               8, (get_byte(decode(md5(semente), 'hex'), 2) & 63) | 128),
-             'hex')::uuid
-$$;
 
 -- ---------------------------------------------------------------------
 -- Conversao: 154 moedas ISO 4217 reais, fator aproximado para USD
@@ -763,12 +753,15 @@ UPDATE tmp_canal t SET id_canal = c.id_canal
 FROM steam_do_bedo.Canal c
 WHERE c.nome = t.nome AND c.nro_plataforma = t.nro_plataforma;
 
--- Video: id_video UUID v7 derivado do instante de postagem (DEC-021) e de
--- uma semente única (canal + número do vídeo). Inserido em ordem de
--- id_video, como chegaria um coletor em tempo real: a PK cresce pelo fim.
+-- Video: id_video gerado pela função nativa gen_random_uuid() (UUID v4,
+-- DEC-021). Como a ordem dos UUIDs muda a cada carga, nenhum sorteio
+-- seguinte percorre os vídeos em ordem de id_video: onde a ordem importa
+-- (Comentario), ela é (dataH, canal, número do vídeo), fixa entre cargas.
+-- A inserção segue a ordem de id_video, a da PK, para a árvore ser
+-- montada em sequência mesmo com ids aleatórios.
 -- Título com "#n" garante o UNIQUE (id_canal, titulo, dataH).
 CREATE TEMP TABLE tmp_video_id ON COMMIT DROP AS
-SELECT pg_temp.uuid_v7_det(v.dataH, c.k || '/' || v.n_video) AS id_video,
+SELECT gen_random_uuid() AS id_video,
        c.id_canal, c.k AS k_canal, c.nro_plataforma, c.formato, c.limite, c.id_streamer, c.pop,
        v.n_video, v.curto, v.dataH, v.duracao, v.tema, v.visu_total, v.visu_simul
 FROM tmp_video v
@@ -899,17 +892,23 @@ ORDER BY pt.nro, c.id_canal;
 -- primeiro, espalhados pela duração da live; os offline depois, ao longo
 -- de até 60 dias, sem passar do limite da plataforma (T3 e T7).
 -- Autor: conta da plataforma do vídeo, por lei de potência (poucos
--- usuários comentam muito). Inserido em ordem de (id_video, seq), a ordem
--- da PK.
+-- usuários comentam muito).
+-- Dois passos, por causa do UUID aleatório (DEC-021):
+--   1. tmp_comentario sorteia autor e texto percorrendo os vídeos numa
+--      ordem fixa entre cargas (dataH, canal, número do vídeo). Se a
+--      ordem fosse a dos UUIDs, os sorteios cairiam em comentários
+--      diferentes a cada carga.
+--   2. A tabela real recebe as linhas em ordem de (id_video, seq), a da
+--      PK: a árvore é montada em sequência, sem inserções espalhadas.
 -- ---------------------------------------------------------------------
 CREATE TEMP TABLE tmp_video_coment ON COMMIT DROP AS
 WITH pesos AS (
-    SELECT v.id_video, v.nro_plataforma, v.dataH, v.duracao, v.limite, v.curto, v.formato,
+    SELECT v.id_video, v.k_canal, v.n_video, v.nro_plataforma, v.dataH, v.duracao, v.limite, v.curto, v.formato,
            power(v.visu_total + 1, 0.85) * exp(0.8 * pg_temp.normal())
                * CASE WHEN v.curto THEN 0.3 ELSE 1 END AS peso
     FROM tmp_video_id v
 )
-SELECT id_video, nro_plataforma, dataH, duracao, limite, n_c,
+SELECT id_video, k_canal, n_video, nro_plataforma, dataH, duracao, limite, n_c,
        floor(n_c * CASE WHEN curto THEN 0 WHEN formato = 'longo' THEN 0.85 ELSE 0.5 END)::int AS n_on
 FROM (
     SELECT p.*, floor((SELECT n_comentarios FROM seed_param) * p.peso / sum(p.peso) OVER () + random())::int AS n_c
@@ -918,26 +917,34 @@ FROM (
 WHERE n_c > 0;
 ANALYZE tmp_video_coment;
 
-INSERT INTO steam_do_bedo.Comentario (id_video, seq, id_usuario, texto, dataH, coment_on)
+CREATE TEMP TABLE tmp_comentario ON COMMIT DROP AS
 SELECT v.id_video, g.seq, rc.id_usuario,
        (ARRAY['kkkkkk','GG','que jogada!','primeiro!','manda salve','F no chat','bora!!',
               'esse jogo é muito bom','alguém mais assistindo em 2026?','top demais','clutch',
               'pog','que lag é esse','ensina aí','melhor live','vai dar certo','nerfa isso',
-              'saudades dessa época','lindo demais','salve do Brasil'])[1 + floor(random() * 20)::int],
+              'saudades dessa época','lindo demais','salve do Brasil'])[1 + floor(random() * 20)::int] AS texto,
        CASE WHEN g.seq <= v.n_on
             THEN v.dataH + v.duracao * (g.seq::double precision / (v.n_on + 1))
             ELSE v.dataH + v.duracao
                  + least(interval '60 days', greatest(interval '0', v.limite - v.dataH - v.duracao))
                    * ((g.seq - v.n_on)::double precision / (v.n_c - v.n_on + 1))
-       END,
-       g.seq <= v.n_on
-FROM (SELECT * FROM tmp_video_coment ORDER BY id_video) v
+       END AS dataH,
+       g.seq <= v.n_on AS coment_on
+-- Ordem fixa entre cargas (não a dos UUIDs, que são aleatórios): os
+-- sorteios de autor e texto caem sempre nos mesmos comentários.
+FROM (SELECT * FROM tmp_video_coment ORDER BY dataH, k_canal, n_video) v
 JOIN tmp_qtd_conta qc ON qc.nro_plataforma = v.nro_plataforma
 CROSS JOIN LATERAL generate_series(1, v.n_c) AS g(seq)
 CROSS JOIN LATERAL (SELECT pg_temp.potencia(qc.n, 2.5) AS rk WHERE g.seq > 0) x
 -- mesma busca pela chave única (ver Inscricao): plano estável em 5 mi de linhas
 CROSS JOIN LATERAL (SELECT r.id_usuario FROM tmp_rank_conta r
                     WHERE r.nro_plataforma = v.nro_plataforma AND r.rk = x.rk) rc;
+ANALYZE tmp_comentario;
+
+INSERT INTO steam_do_bedo.Comentario (id_video, seq, id_usuario, texto, dataH, coment_on)
+SELECT id_video, seq, id_usuario, texto, dataH, coment_on
+FROM tmp_comentario
+ORDER BY id_video, seq;
 ANALYZE steam_do_bedo.comentario;
 
 -- ---------------------------------------------------------------------
@@ -959,7 +966,9 @@ SELECT c.id_video, c.seq AS seq_comentario, g.seq_pg, c.id_usuario, ca.nro_plata
        greatest(0.01, round(round(usd.base::numeric / cv.fator_conver, 2) * cv.fator_conver, 2)) AS valor,
        (ARRAY['lido','lido','lido','lido','lido','lido','lido','recebido','recebido','recusado'])
            [1 + floor(least(0.9999, s.u * 1.0) * 10)::int] AS status
-FROM steam_do_bedo.Comentario c
+-- Lê tmp_comentario, e não a tabela real: ela está na ordem fixa entre
+-- cargas, então o sorteio de quem doa não depende dos UUIDs (DEC-021).
+FROM tmp_comentario c
 CROSS JOIN LATERAL (SELECT random() AS u WHERE c.seq > 0) sel
 JOIN steam_do_bedo.Video v       ON v.id_video = c.id_video
 JOIN steam_do_bedo.Canal ca      ON ca.id_canal = v.id_canal

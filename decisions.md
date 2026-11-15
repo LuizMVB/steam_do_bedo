@@ -33,7 +33,7 @@ A forma de executar e a ordem dos arquivos (DEC-030) estão no
 | Plataforma, Empresa | 10^3 a 10^8 | `INTEGER` |
 | Usuario | 6 × 10^12, no pior caso (internet inteira, várias contas por pessoa) | `BIGINT` |
 | Canal | acima de 2,15 × 10^9 (todo criador de vídeo curto tem canal) | `BIGINT` |
-| Video | 1,9 × 10^15 (shorts a cada 10 s replicados em 60 plataformas, a conta sugerida pelo professor) | `UUID` v7 |
+| Video | 1,9 × 10^15 (shorts a cada 10 s replicados em 60 plataformas, a conta sugerida pelo professor) | `UUID` |
 | Comentários por vídeo, doações por comentário | 10^7 e 10 | `INTEGER` |
 
 ## 2. Chaves (DEC-005, 008, 014, 015, 017, 021 a 024)
@@ -42,12 +42,22 @@ A forma de executar e a ordem dos arquivos (DEC-030) estão no
 |---|---|---|
 | Usuario | `id_usuario BIGINT IDENTITY`, `nick` como `UNIQUE` | O nick pode mudar e se repetia como chave em 6 tabelas. Com inteiro, o join é mais barato e um renome não atualiza milhões de comentários. Foi sugestão do professor |
 | Canal | `id_canal BIGINT IDENTITY`, `(nome, nro_plataforma)` como `UNIQUE` | A chave natural composta de texto se propagava para patrocínio, níveis, inscrições e vídeos |
-| Video | `id_video UUID` v7, `(id_canal, titulo, dataH)` como `UNIQUE` | No cenário, os ids são gerados de forma distribuída (por coletores e partições), sem sequência central. O v7 é ordenado no tempo, então as inserções caem no fim do B-tree. Custo aceito: cerca de 37% a mais de espaço em `Video` |
+| Video | `id_video UUID` gerado por `gen_random_uuid()`, `(id_canal, titulo, dataH)` como `UNIQUE` | No cenário, os ids são gerados de forma distribuída (por coletores e partições), sem sequência central e sem colisão. Custo aceito: cerca de 37% a mais de espaço em `Video` em relação ao `BIGINT` |
 | Comentario | `(id_video, seq)` | O comentário depende do vídeo, como o professor confirmou. O `nick` saiu da chave, o que reduziu o índice em 76% em relação à chave natural de 6 colunas |
 | Doacao e as 4 formas de pagamento | `(id_video, seq_comentario, seq_pg)` | Herda a chave do comentário. `UUID` + `INTEGER` + `INTEGER` somam 24 bytes, sem desperdício de alinhamento |
 
-O PostgreSQL 17 não tem `uuidv7()` nativo (só o 18), então o `ddl.sql` cria a
-function `uuid_v7()`.
+**UUID nativo (versão 4):** o projeto usa só a função nativa do PostgreSQL 17,
+`gen_random_uuid()`.
+- **Custo:** o id é aleatório, então cada vídeo novo entra num ponto qualquer
+  do B-tree da PK, e não no fim, como numa sequence. Isso gera mais divisões de
+  página na inserção. Na medição em lote, o v4 ficou com o mesmo tamanho do v7
+  e com `INSERT` cerca de 9% mais lento.
+- **Por que não o v7:** um UUID v7, ordenado no tempo, evitaria esse custo, mas
+  o PostgreSQL 17 não tem `uuidv7()` nativo; ele só chega no 18. O grupo
+  preferiu a função nativa a manter uma function própria.
+- **No seed:** os vídeos são gravados em ordem de `id_video`. Como o
+  `gen_random_uuid()` não obedece à semente, os sorteios que dependem da ordem
+  dos vídeos usam uma ordem fixa: data, canal e número do vídeo.
 
 ## 3. Constraints (DEC-006, 009 a 011, 016, 025)
 
@@ -171,6 +181,11 @@ distribuição desbalanceada. A carga tem **cerca de 8,7 milhões de registros**
 | Canal | 35.906 | CartaoCredito | 23.719 |
 | NivelCanal | 98.855 | MecanismoPlat | 44.628 |
 
+A contagem foi feita na versão com UUID v7 (tag `v1.1.0`). Com o
+`gen_random_uuid()`, o sorteio das doações percorre os comentários numa ordem
+um pouco diferente. Por isso `Doacao` e as quatro formas de pagamento podem
+variar algumas centenas de registros; as demais tabelas não mudam.
+
 - **Tabelas de referência no tamanho real,** abaixo de 1.000 com autorização do
   professor: 154 moedas ISO, 199 países e 28 plataformas reais.
 - **Distribuições desbalanceadas e correlacionadas:** a popularidade de cada
@@ -178,9 +193,12 @@ distribuição desbalanceada. A carga tem **cerca de 8,7 milhões de registros**
   os membros e o patrocínio. Os comentários são proporcionais às visualizações,
   com cauda longa. 5% dos usuários são streamers, e 1,9% dos comentários trazem
   doação.
-- **Reprodutível:** o seed usa semente fixa e gera os mesmos dados a cada
-  execução. Ele recusa banco que não esteja vazio, roda numa única transação e,
-  no fim, confere todas as regras dos triggers antes do `COMMIT`.
+- **Reprodutível:** o seed usa semente fixa. Os volumes, nomes, valores e
+  distribuições se repetem a cada execução. Mudam só os UUIDs dos vídeos (o
+  `gen_random_uuid()` não obedece à semente) e o que deriva deles: TxID,
+  IdPayPal e o número do cartão. Ele recusa banco que não esteja vazio, roda
+  numa única transação e, no fim, confere todas as regras dos triggers antes do
+  `COMMIT`.
 
 ## 10. Medição (DEC-032)
 

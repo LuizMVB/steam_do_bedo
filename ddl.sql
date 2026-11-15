@@ -4,8 +4,8 @@
 --
 -- O que faz: cria o schema steam_do_bedo com as 20 tabelas do modelo
 -- relacional do enunciado, com as chaves remodeladas e as constraints
--- decididas pelo grupo. Também cria a function uuid_v7(), usada como
--- DEFAULT da chave de Video.
+-- decididas pelo grupo. A chave de Video usa o UUID nativo do
+-- PostgreSQL 17 (gen_random_uuid(), versão 4).
 --
 -- Ordem de execução (DEC-030). Cada arquivo depende dos anteriores:
 --   1. ddl.sql         <- este arquivo (recria o schema do zero)
@@ -40,39 +40,6 @@ DROP SCHEMA IF EXISTS steam_do_bedo CASCADE;
 CREATE SCHEMA steam_do_bedo;
 
 SET search_path TO steam_do_bedo;
-
--- ---------------------------------------------------------------------
--- uuid_v7(p_ts): gera um UUID versão 7 (RFC 9562).
--- O quê: os 48 primeiros bits são o instante em milissegundos desde
---   1970 (p_ts, por padrão o relógio atual); o resto vem de
---   gen_random_uuid() (v4), com os bits de versão trocados de 4 para 7.
--- Por quê: a chave de Video é UUID v7 (DEC-021). O cenário inclui vídeo
---   curto replicado em várias plataformas (DEC-020), o que leva a
---   geração distribuída do identificador. O v7 é ordenado no tempo e
---   insere perto do fim do B-tree, ao contrário do v4.
--- DEC-021
--- Cuidado: o PostgreSQL 17 não tem uuidv7() nativo (só a partir do 18).
---   set_bit numera os bits do bytea do menos para o mais significativo
---   de cada byte: os bits 52 e 53 são os bits 4 e 5 do byte 6, que
---   transformam o nibble de versão 0100 (v4) em 0111 (v7). Os bits de
---   variante (10) já vêm certos do v4. Dentro do mesmo milissegundo a
---   ordem é aleatória (não há contador), o que é aceito: a localidade
---   no índice continua sendo por milissegundo.
--- ---------------------------------------------------------------------
-CREATE FUNCTION steam_do_bedo.uuid_v7(p_ts TIMESTAMPTZ DEFAULT clock_timestamp())
-RETURNS UUID
-LANGUAGE sql VOLATILE PARALLEL SAFE AS $$
-    SELECT encode(
-             set_bit(set_bit(
-               overlay(uuid_send(gen_random_uuid())
-                       PLACING substring(int8send(floor(extract(epoch FROM p_ts) * 1000)::BIGINT) FROM 3)
-                       FROM 1 FOR 6),
-               52, 1), 53, 1),
-             'hex')::UUID;
-$$;
-
-COMMENT ON FUNCTION steam_do_bedo.uuid_v7(TIMESTAMPTZ) IS
-    'UUID v7 (RFC 9562): 48 bits de timestamp em ms + 74 bits aleatórios. DEC-021';
 
 -- ---------------------------------------------------------------------
 -- Empresa
@@ -351,17 +318,23 @@ CREATE TABLE steam_do_bedo.Inscricao (
 -- O quê: vídeo (live, VOD ou short) postado num canal.
 -- DEC-015: PK artificial; identidade de negócio (id_canal, titulo, dataH)
 --   em UNIQUE, com titulo e dataH NOT NULL.
--- DEC-021: id_video UUID v7 (antes BIGINT identity). O cenário com vídeo
---   curto (DEC-020) leva à geração distribuída do id (cada coletor ou
---   partição gera sem consultar uma sequence central). Custo medido:
---   +37% de espaço em Video e +28% no índice da PK de Comentario.
+-- DEC-021: id_video UUID (antes BIGINT identity), gerado pela função
+--   nativa gen_random_uuid() (versão 4, aleatória). O cenário com vídeo
+--   curto (DEC-020) leva à geração distribuída do id: cada coletor ou
+--   partição gera o seu sem consultar uma sequence central e sem colisão.
+--   Custo medido: +37% de espaço em Video e +28% no índice da PK de
+--   Comentario em relação ao BIGINT.
+-- Cuidado: por ser aleatório, cada vídeo novo entra num ponto qualquer do
+--   B-tree da PK (e das PKs de Comentario e Doacao, que começam por
+--   id_video), e não no fim, como uma sequence. Isso gera mais divisões
+--   de página na inserção. Aceito em troca de usar só a função nativa.
 -- DEC-016 / DEC-025: duração positiva, contadores não negativos e o pico
 --   simultâneo não maior que o total (aplicado agora).
 -- Cuidado: o UNIQUE (id_canal, ...) também atende "vídeos de um canal",
 --   por ter id_canal como coluna líder (DEC-015, DEC-018).
 -- ---------------------------------------------------------------------
 CREATE TABLE steam_do_bedo.Video (
-    id_video UUID NOT NULL DEFAULT steam_do_bedo.uuid_v7(),   -- DEC-021
+    id_video UUID NOT NULL DEFAULT gen_random_uuid(),         -- DEC-021: UUID v4 nativo
     id_canal BIGINT NOT NULL,                                 -- DEC-014 / DEC-023
     titulo VARCHAR(255) NOT NULL,                             -- DEC-015
     dataH TIMESTAMPTZ NOT NULL,                               -- DEC-015

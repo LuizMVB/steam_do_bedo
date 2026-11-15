@@ -556,7 +556,7 @@ CREATE INDEX idx_canal_id_streamer
 --   inteira (155 MB): video_canal_titulo_datah_key começa por id_canal, mas
 --   não tem visu_total, e os vídeos de um canal estão espalhados pela
 --   tabela (correlação física de id_canal = 0,01, porque a ordem física é a
---   do UUID v7, isto é, do tempo). Com o INCLUDE, a contagem e a soma saem
+--   do UUID, e não a do canal). Com o INCLUDE, a contagem e a soma saem
 --   só do índice (Index Only Scan), sem visitar a tabela.
 -- DEC-034
 -- Medido: item 1 com plataforma pequena (Kick, 3,5% dos canais): 587 ->

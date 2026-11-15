@@ -24,6 +24,11 @@ gráficos estão em [`imagens/`](imagens/).
   por causa do primeiro acesso ao disco e ao catálogo.
 - **Os tempos absolutos dependem da máquina.** O que vale é a comparação entre
   cenários.
+- **As medições foram feitas com a chave de `Video` em UUID v7,** gerado por uma
+  function própria (tag `v1.1.0`). A versão atual usa o UUID v4 nativo
+  (`gen_random_uuid()`). Na comparação em lote, os dois tiveram o mesmo tamanho
+  de tabela e de índice; o v4 inseriu cerca de 9% mais devagar. Os planos e as
+  páginas lidas das consultas não dependem da versão do UUID.
 
 ## 1. Frio × quente: por que medir a frio
 
