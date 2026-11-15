@@ -1,761 +1,1175 @@
 -- =====================================================================
 -- Projeto de Banco de Dados 2026/2 - Stream do Bedo
--- Script de carga (seed) - PostgreSQL 17
+-- Arquivo 2/6: carga de dados (seed v3) - PostgreSQL 17
 --
--- Item mandatório 1: inserir entre 1.000 e 10.000 tuplas por tabela.
+-- O que faz: popula as 20 tabelas do zero, com dados artificiais em
+-- distribuições desbalanceadas e correlacionadas, coerentes com o cenário
+-- de volumetria da DEC-020 (streaming de jogos com vídeo longo E curto).
+-- É a terceira versão da carga (seed v3); as anteriores estão na tag v1.1.0.
 --
--- Os dados são artificiais: cada tabela é populada por um INSERT ... SELECT
--- sobre generate_series e/ou sobre as tabelas já populadas (via JOIN), o que
--- garante que toda chave estrangeira aponta para uma tupla existente.
--- O setseed() no início fixa a sequência do random(), então toda execução
--- sobre o schema recém-criado pelo ddl.sql produz os mesmos dados.
+-- Ordem de execução (DEC-030):
+--   psql -v ON_ERROR_STOP=1 -d <banco> -f ddl.sql
+--   psql -v ON_ERROR_STOP=1 -d <banco> -f seed.sql            (escala 1)
+--   psql -v ON_ERROR_STOP=1 -d <banco> -v escala=0.1 -f seed.sql  (teste rápido)
+--   depois: views.sql, functions.sql, triggers.sql, tests.sql
 --
--- Execução (sempre após o ddl.sql):
---   psql -U admin -d steam-do-bedo-db -f ddl.sql
---   psql -U admin -d steam-do-bedo-db -f seed.sql
+-- DECs implementadas: 019 a 027 (o seed obedece às mesmas regras dos
+-- triggers, que só são criados depois da carga) e 031 (volumes).
 --
--- Volume gerado (aproximado):
---   Conversao 1000 | Pais 1000 | Empresa 1000 | EmpresaPais ~1200
---   Plataforma 1000 | Usuario 4000 | PlataformaUsuario 8000
---   StreamerPais ~1200 | Canal ~1250 | NivelCanal ~6250 | Inscricao ~8500
---   Patrocinio ~1750 | Video ~5600 | Participa ~5000 | Comentario 9000
---   Doacao 5000 | BitCoin, PayPal, CartaoCredito, MecanismoPlat 1250 cada
+-- Escala (variável psql "escala", padrão 1). Volumes aproximados:
+--   tabela              escala 1     de onde vem
+--   Conversao           154          moedas ISO 4217 reais (fixo)
+--   Pais                199          países reais (fixo)
+--   Empresa             3.000        ~70 reais + fictícias (fixo)
+--   Plataforma          28           plataformas reais (fixo)
+--   Usuario             500 mil      500.000 × escala
+--   PlataformaUsuario   ~880 mil     1 a 5 contas por usuário
+--   StreamerPais        ~26 mil      5% dos usuários são streamers
+--   Canal               ~40 mil      1 canal por conta de streamer (60% das extras)
+--   NivelCanal          ~110 mil     5 níveis em ~55% dos canais
+--   Inscricao           ~600 mil     600.000 × escala, concentrada nos canais populares
+--   Patrocinio          ~12 mil      concentrado nos canais populares
+--   Video               ~1,3 mi      cauda longa por canal; curtos são muitos
+--   Participa           ~150 mil     convidados em ~20% dos vídeos longos
+--   Comentario          5 mi         5.000.000 × escala, cauda longa por vídeo
+--   Doacao              ~2%          dos comentários (5% online, 1% offline)
+--   BitCoin/PayPal/CartaoCredito/MecanismoPlat: partição disjunta de Doacao
+-- O professor autorizou tabelas de referência abaixo de 1.000 linhas e
+-- pediu o máximo de dados possível nas grandes (DEC-031, consulta 04:09).
+--
+-- Garantias:
+--   * Parte de banco virgem: aborta se alguma tabela tiver linhas.
+--   * ON_ERROR_STOP e uma transação só: qualquer erro desfaz tudo.
+--   * Reprodutível: setseed(0.42), sem paralelismo, fuso UTC e UUID de
+--     vídeo derivado de dados determinísticos (não de gen_random_uuid).
+--   * Inserção por conjunto (generate_series, JOIN, LATERAL); nenhum laço
+--     linha a linha.
+--   * Chaves de identidade (Empresa.nro, Plataforma.nro, Usuario.id_usuario,
+--     Canal.id_canal) nunca são números fixos: são obtidas por JOIN pela
+--     chave natural (nome, nick, (nome, nro_plataforma)).
+--   * Atributos derivados (Plataforma.qtd_users, Canal.qtd_visualizacoes)
+--     calculados no próprio INSERT, a partir de tabelas temporárias de
+--     preparação; não há UPDATE final (que deixaria tuplas mortas).
+--   * Obedece às regras dos triggers (DEC-027): seq contínuo por vídeo e
+--     por comentário, seq_plataforma contínuo por (usuário, plataforma),
+--     no máximo 5 níveis por canal, especialização disjunta e total, datas
+--     em ordem (inclusive o Mixer, encerrado em 2020-07-22), dono do canal
+--     streamer e com conta na plataforma, doação em USD (T11).
+--   * Ao fim, uma conferência de sanidade aborta a transação se qualquer
+--     regra acima falhar.
+--
+-- Cuidado: usa tabelas e functions temporárias (pg_temp), que somem no
+-- COMMIT. Cada tabela temporária recebe ANALYZE logo depois de criada: o
+-- autovacuum nunca analisa tabela temporária, e sem estatística o
+-- planejador escolhe nested loop com varredura completa nos JOINs de
+-- sorteio (a carga travava em Inscricao). Não cria nem altera nada no schema steam_do_bedo além das linhas.
+-- O VACUUM ANALYZE do fim roda fora da transação (exigência do comando).
 -- =====================================================================
+
+\set ON_ERROR_STOP on
+\if :{?escala}
+\else
+\set escala 1
+\endif
 
 SET search_path TO steam_do_bedo;
 
+\echo seed: escala = :escala
+\timing on
+
 BEGIN;
 
--- Semente fixa: random() passa a gerar sempre a mesma sequência
+-- Fuso fixo: as datas geradas não dependem da configuração do servidor.
+SET LOCAL timezone = 'UTC';
+-- Workers paralelos têm gerador aleatório próprio: sem paralelismo, a
+-- sequência do random() é a mesma a cada execução.
+SET LOCAL max_parallel_workers_per_gather = 0;
+-- Ordenações e hashes grandes (5 mi de comentários) cabem em memória.
+SET LOCAL work_mem = '128MB';
+-- JIT só acrescentaria segundos de compilação a consultas de carga.
+SET LOCAL jit = off;
+-- Sem Memoize: o planejador guardaria em cache o resultado de uma
+-- subconsulta LATERAL com random() pela chave de entrada (por exemplo, o
+-- número da conta ou o seq do comentário) e repetiria o mesmo sorteio para
+-- todas as linhas com a mesma chave. Achado na validação: só 0,39% dos
+-- comentários ficavam com doação, e todos os vídeos tinham o mesmo
+-- convidado. Cada sorteio deste arquivo depende de random() por linha.
+SET LOCAL enable_memoize = off;
+
+-- ---------------------------------------------------------------------
+-- Falha cedo: o schema precisa existir, as 20 tabelas precisam estar
+-- vazias e a escala precisa ser um número entre 0,001 e 4.
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    tabelas CONSTANT text[] := ARRAY[
+        'conversao', 'pais', 'empresa', 'empresapais', 'plataforma', 'usuario',
+        'plataformausuario', 'streamerpais', 'canal', 'nivelcanal', 'inscricao',
+        'patrocinio', 'video', 'participa', 'comentario', 'doacao',
+        'bitcoin', 'paypal', 'cartaocredito', 'mecanismoplat'];
+    t         text;
+    qtd       bigint;
+    ocupadas  text[] := '{}';
+BEGIN
+    IF to_regnamespace('steam_do_bedo') IS NULL THEN
+        RAISE EXCEPTION 'seed: schema steam_do_bedo não existe. Rode o ddl.sql antes deste seed.';
+    END IF;
+    FOREACH t IN ARRAY tabelas LOOP
+        IF to_regclass('steam_do_bedo.' || t) IS NULL THEN
+            RAISE EXCEPTION 'seed: tabela steam_do_bedo.% não existe. Rode o ddl.sql antes deste seed.', t;
+        END IF;
+        EXECUTE format('SELECT count(*) FROM steam_do_bedo.%I', t) INTO qtd;
+        IF qtd > 0 THEN
+            ocupadas := ocupadas || format('%s (%s)', t, qtd);
+        END IF;
+    END LOOP;
+    IF cardinality(ocupadas) > 0 THEN
+        RAISE EXCEPTION 'seed abortado: o banco não está vazio. Tabelas com linhas: %',
+                        array_to_string(ocupadas, ', ')
+            USING HINT = 'Rode o ddl.sql de novo e depois o seed.sql. Nada foi inserido.';
+    END IF;
+END
+$$;
+
+-- Parâmetros da carga. "fim" é o instante mais recente gerado: a carga
+-- não depende do dia em que é executada.
+CREATE TEMP TABLE seed_param ON COMMIT DROP AS
+SELECT :'escala'::numeric                      AS escala,
+       TIMESTAMPTZ '2026-10-31 23:59:00+00'    AS fim,
+       round(500000  * :'escala'::numeric)::int AS n_usuarios,
+       round(5000000 * :'escala'::numeric)::int AS n_comentarios,
+       round(600000  * :'escala'::numeric)::int AS n_inscricoes;
+
+DO $$
+BEGIN
+    IF (SELECT escala FROM seed_param) NOT BETWEEN 0.001 AND 4 THEN
+        RAISE EXCEPTION 'seed: escala % fora do intervalo [0,001; 4]', (SELECT escala FROM seed_param);
+    END IF;
+END
+$$;
+
 SELECT setseed(0.42);
 
--- Workers paralelos têm gerador aleatório próprio; sem paralelismo a
--- sequência do random() continua reprodutível
-SET LOCAL max_parallel_workers_per_gather = 0;
+-- ---------------------------------------------------------------------
+-- Funções auxiliares temporárias (somem no fim da sessão)
+-- ---------------------------------------------------------------------
+
+-- Normal padrão (Box-Muller). 1 - random() evita ln(0).
+CREATE FUNCTION pg_temp.normal() RETURNS double precision
+LANGUAGE sql VOLATILE AS
+$$ SELECT sqrt(-2 * ln(1 - random())) * cos(2 * pi() * random()) $$;
+
+-- Sorteio enviesado para o começo de 1..n: com a > 1, os primeiros
+-- valores saem muito mais (lei de potência). Usado para "poucos usuários
+-- comentam muito" e "poucas marcas patrocinam muito".
+CREATE FUNCTION pg_temp.potencia(n bigint, a double precision) RETURNS bigint
+LANGUAGE sql VOLATILE AS
+$$ SELECT 1 + floor(n * power(random(), a))::bigint $$;
+
+-- UUID v7 determinístico: 48 bits do instante (ms) + 80 bits do md5 de uma
+-- semente, com os bits de versão (0111) e variante (10) acertados.
+-- Mesmo formato do steam_do_bedo.uuid_v7() (DEC-021), mas reprodutível,
+-- porque gen_random_uuid() não obedece ao setseed.
+CREATE FUNCTION pg_temp.uuid_v7_det(ts timestamptz, semente text) RETURNS uuid
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT encode(
+             set_byte(set_byte(
+               substring(int8send(floor(extract(epoch FROM ts) * 1000)::bigint) FROM 3)
+               || substring(decode(md5(semente), 'hex') FROM 1 FOR 10),
+               6, (get_byte(decode(md5(semente), 'hex'), 0) & 15) | 112),
+               8, (get_byte(decode(md5(semente), 'hex'), 2) & 63) | 128),
+             'hex')::uuid
+$$;
 
 -- ---------------------------------------------------------------------
--- Conversao: 36 moedas reais + 964 fictícias = 1000
--- Fatores de conversão para USD aproximados
+-- Conversao: 154 moedas ISO 4217 reais, fator aproximado para USD
+-- (cotações de 2025, arredondadas). Tamanho real, sem moedas fictícias
+-- (DEC-031). Inclui moedas sem país na tabela Pais (territórios), que
+-- continuam válidas no catálogo de moedas.
 -- ---------------------------------------------------------------------
 INSERT INTO steam_do_bedo.Conversao (moeda, nome, fator_conver) VALUES
-    ('USD', 'Dólar americano',        1.00000000),
-    ('BRL', 'Real brasileiro',        0.18000000),
-    ('GBP', 'Libra esterlina',        1.27000000),
-    ('EUR', 'Euro',                   1.08000000),
-    ('JPY', 'Iene japonês',           0.00670000),
-    ('KRW', 'Won sul-coreano',        0.00074000),
-    ('CNY', 'Yuan chinês',            0.14000000),
-    ('INR', 'Rupia indiana',          0.01200000),
-    ('MXN', 'Peso mexicano',          0.05500000),
-    ('ARS', 'Peso argentino',         0.00110000),
-    ('CLP', 'Peso chileno',           0.00105000),
-    ('COP', 'Peso colombiano',        0.00025000),
-    ('PEN', 'Sol peruano',            0.27000000),
-    ('UYU', 'Peso uruguaio',          0.02500000),
-    ('PYG', 'Guarani paraguaio',      0.00013000),
-    ('AUD', 'Dólar australiano',      0.66000000),
-    ('NZD', 'Dólar neozelandês',      0.60000000),
-    ('ZAR', 'Rand sul-africano',      0.05400000),
-    ('CHF', 'Franco suíço',           1.12000000),
-    ('SEK', 'Coroa sueca',            0.09500000),
-    ('NOK', 'Coroa norueguesa',       0.09300000),
-    ('DKK', 'Coroa dinamarquesa',     0.14500000),
-    ('PLN', 'Zloty polonês',          0.25000000),
-    ('TRY', 'Lira turca',             0.02900000),
-    ('RUB', 'Rublo russo',            0.01100000),
-    ('SGD', 'Dólar de Singapura',     0.74000000),
-    ('HKD', 'Dólar de Hong Kong',     0.12800000),
-    ('IDR', 'Rupia indonésia',        0.00006200),
-    ('PHP', 'Peso filipino',          0.01750000),
-    ('THB', 'Baht tailandês',         0.02800000),
-    ('AED', 'Dirham dos Emirados',    0.27230000),
-    ('SAR', 'Rial saudita',           0.26670000),
-    ('EGP', 'Libra egípcia',          0.02050000),
-    ('NGN', 'Naira nigeriana',        0.00065000),
-    ('ILS', 'Novo shekel israelense', 0.27000000),
-    ('UAH', 'Grívnia ucraniana',      0.02400000);
-
--- Códigos fictícios XAA..XZZ e depois WAA..WKZ (nenhuma moeda real acima começa com X ou W)
-INSERT INTO steam_do_bedo.Conversao (moeda, nome, fator_conver)
-SELECT cod, 'Moeda Fictícia ' || cod, round((0.0005 + 2.5 * random())::numeric, 8)
-FROM generate_series(1, 964) AS i
-CROSS JOIN LATERAL (
-    SELECT CASE WHEN i <= 676 THEN 'X' ELSE 'W' END
-           || chr(65 + ((i - 1) % 676) / 26)
-           || chr(65 + (i - 1) % 26) AS cod
-) AS m;
+    -- África
+    ('DZD','Dinar argelino',0.0075),('AOA','Kwanza angolano',0.0011),
+    ('XOF','Franco CFA da África Ocidental',0.0017),('BWP','Pula de Botsuana',0.073),
+    ('BIF','Franco do Burundi',0.00034),('CVE','Escudo cabo-verdiano',0.0098),
+    ('XAF','Franco CFA da África Central',0.0017),('KMF','Franco comorense',0.0022),
+    ('CDF','Franco congolês',0.00035),('DJF','Franco do Djibuti',0.0056),
+    ('EGP','Libra egípcia',0.020),('ERN','Nakfa da Eritreia',0.0667),
+    ('SZL','Lilangeni suázi',0.055),('ETB','Birr etíope',0.0072),
+    ('GMD','Dalasi gambiano',0.014),('GHS','Cedi ganês',0.08),
+    ('GNF','Franco guineano',0.000115),('KES','Xelim queniano',0.0077),
+    ('LSL','Loti do Lesoto',0.055),('LRD','Dólar liberiano',0.005),
+    ('LYD','Dinar líbio',0.18),('MGA','Ariary malgaxe',0.00022),
+    ('MWK','Kwacha malauiano',0.00058),('MRU','Ouguiya mauritana',0.025),
+    ('MUR','Rupia mauriciana',0.022),('MAD','Dirham marroquino',0.10),
+    ('MZN','Metical moçambicano',0.0156),('NAD','Dólar namibiano',0.055),
+    ('NGN','Naira nigeriana',0.00065),('RWF','Franco ruandês',0.0007),
+    ('STN','Dobra de São Tomé e Príncipe',0.044),('SCR','Rupia seichelense',0.07),
+    ('SLE','Leone de Serra Leoa',0.044),('SOS','Xelim somali',0.00175),
+    ('ZAR','Rand sul-africano',0.055),('SSP','Libra sul-sudanesa',0.00022),
+    ('SDG','Libra sudanesa',0.00166),('TZS','Xelim tanzaniano',0.00038),
+    ('TND','Dinar tunisiano',0.33),('UGX','Xelim ugandense',0.00027),
+    ('ZMW','Kwacha zambiano',0.037),('ZWG','Ouro do Zimbábue',0.037),
+    -- Américas
+    ('XCD','Dólar do Caribe Oriental',0.37),('ARS','Peso argentino',0.00085),
+    ('BSD','Dólar bahamense',1.0),('BBD','Dólar barbadiano',0.5),
+    ('BZD','Dólar belizenho',0.5),('BOB','Boliviano',0.145),
+    ('BRL','Real brasileiro',0.18),('CAD','Dólar canadense',0.72),
+    ('CLP','Peso chileno',0.00105),('COP','Peso colombiano',0.00025),
+    ('CRC','Colón costarriquenho',0.002),('CUP','Peso cubano',0.0417),
+    ('DOP','Peso dominicano',0.016),('GTQ','Quetzal guatemalteco',0.13),
+    ('GYD','Dólar guianense',0.0048),('HTG','Gourde haitiano',0.0076),
+    ('HNL','Lempira hondurenha',0.039),('JMD','Dólar jamaicano',0.0063),
+    ('MXN','Peso mexicano',0.053),('NIO','Córdoba nicaraguense',0.027),
+    ('PAB','Balboa panamenho',1.0),('PYG','Guarani paraguaio',0.000125),
+    ('PEN','Sol peruano',0.27),('SRD','Dólar surinamês',0.027),
+    ('TTD','Dólar de Trinidad e Tobago',0.147),('USD','Dólar americano',1.0),
+    ('UYU','Peso uruguaio',0.025),('VES','Bolívar venezuelano',0.01),
+    -- Ásia
+    ('AFN','Afegane',0.014),('AMD','Dram armênio',0.0026),
+    ('AZN','Manat azeri',0.588),('BHD','Dinar bareinita',2.65),
+    ('BDT','Taka bengali',0.0082),('BTN','Ngultrum butanês',0.0117),
+    ('BND','Dólar bruneano',0.75),('KHR','Riel cambojano',0.00025),
+    ('CNY','Yuan chinês',0.139),('GEL','Lari georgiano',0.37),
+    ('INR','Rupia indiana',0.0117),('IDR','Rupia indonésia',0.000061),
+    ('IRR','Rial iraniano',0.0000238),('IQD','Dinar iraquiano',0.00076),
+    ('ILS','Novo shekel israelense',0.28),('JPY','Iene japonês',0.0066),
+    ('JOD','Dinar jordaniano',1.41),('KZT','Tenge cazaque',0.0019),
+    ('KWD','Dinar kuwaitiano',3.26),('KGS','Som quirguiz',0.0114),
+    ('LAK','Kip laosiano',0.000046),('LBP','Libra libanesa',0.0000112),
+    ('MYR','Ringgit malaio',0.23),('MVR','Rufiyaa maldiva',0.065),
+    ('MNT','Tugrik mongol',0.00029),('MMK','Kyat birmanês',0.00048),
+    ('NPR','Rupia nepalesa',0.0073),('KPW','Won norte-coreano',0.0011),
+    ('OMR','Rial omanense',2.6),('PKR','Rupia paquistanesa',0.0035),
+    ('PHP','Peso filipino',0.0175),('QAR','Rial catariano',0.275),
+    ('SAR','Rial saudita',0.2666),('SGD','Dólar de Singapura',0.77),
+    ('KRW','Won sul-coreano',0.00072),('LKR','Rupia cingalesa',0.0033),
+    ('SYP','Libra síria',0.000077),('TWD','Novo dólar taiwanês',0.032),
+    ('TJS','Somoni tadjique',0.1),('THB','Baht tailandês',0.03),
+    ('TRY','Lira turca',0.025),('TMT','Manat turcomeno',0.2857),
+    ('AED','Dirham dos Emirados',0.2723),('UZS','Som uzbeque',0.000079),
+    ('VND','Dong vietnamita',0.000039),('YER','Rial iemenita',0.004),
+    ('HKD','Dólar de Hong Kong',0.128),('MOP','Pataca de Macau',0.124),
+    -- Europa
+    ('ALL','Lek albanês',0.011),('BYN','Rublo bielorrusso',0.30),
+    ('BAM','Marco conversível bósnio',0.56),('BGN','Lev búlgaro',0.56),
+    ('EUR','Euro',1.10),('CZK','Coroa tcheca',0.044),
+    ('DKK','Coroa dinamarquesa',0.147),('HUF','Florim húngaro',0.0028),
+    ('ISK','Coroa islandesa',0.0074),('CHF','Franco suíço',1.17),
+    ('MDL','Leu moldávio',0.057),('MKD','Dinar macedônio',0.0178),
+    ('NOK','Coroa norueguesa',0.094),('PLN','Zloty polonês',0.26),
+    ('RON','Leu romeno',0.22),('RUB','Rublo russo',0.012),
+    ('RSD','Dinar sérvio',0.0094),('SEK','Coroa sueca',0.098),
+    ('UAH','Grívnia ucraniana',0.024),('GBP','Libra esterlina',1.30),
+    -- Oceania
+    ('AUD','Dólar australiano',0.65),('FJD','Dólar fijiano',0.44),
+    ('NZD','Dólar neozelandês',0.59),('PGK','Kina papuásia',0.25),
+    ('WST','Tala samoano',0.36),('SBD','Dólar das Ilhas Salomão',0.12),
+    ('TOP','Paʻanga tonganesa',0.42),('VUV','Vatu de Vanuatu',0.0083),
+    -- Territórios (moeda existe, país não está em Pais)
+    ('XPF','Franco CFP',0.0092),('ANG','Florim das Antilhas',0.56),
+    ('AWG','Florim arubano',0.556),('KYD','Dólar das Ilhas Cayman',1.2),
+    ('BMD','Dólar bermudense',1.0),('FKP','Libra das Malvinas',1.30),
+    ('GIP','Libra de Gibraltar',1.30),('SHP','Libra de Santa Helena',1.30);
 
 -- ---------------------------------------------------------------------
--- Pais: 40 países reais + 960 fictícios (DDI 1001..1960) = 1000
+-- Pais: 199 países reais (193 da ONU + Vaticano, Palestina, Kosovo,
+-- Taiwan, Hong Kong e Macau), com a moeda corrente.
+-- DDI: o código não é único no mundo real (+1 é de EUA, Canadá e Caribe;
+-- +7 é de Rússia e Cazaquistão). Como a PK é o DDI, o seed usa o prefixo
+-- que distingue o país: os países do Caribe no +1 usam 1 + código de área
+-- (Jamaica 1876), o Canadá usa 1613 (Ottawa), o Cazaquistão 77 e o
+-- Vaticano 379 (código reservado a ele pela UIT). DEC-031.
+-- "peso" (só na carga) é a participação relativa do país no público de
+-- streaming, usada para sortear a residência dos usuários: concentrada
+-- em poucos países (EUA, Índia, Brasil, Indonésia...), e 0,05 para os
+-- países sem peso próprio. Valores do grupo, inspirados no número de
+-- usuários de internet de cada país; não são estatística oficial.
 -- ---------------------------------------------------------------------
-INSERT INTO steam_do_bedo.Pais (ddi, nome, moeda) VALUES
-    ('1',   'Estados Unidos',  'USD'),
-    ('55',  'Brasil',          'BRL'),
-    ('44',  'Reino Unido',     'GBP'),
-    ('351', 'Portugal',        'EUR'),
-    ('49',  'Alemanha',        'EUR'),
-    ('33',  'França',          'EUR'),
-    ('34',  'Espanha',         'EUR'),
-    ('39',  'Itália',          'EUR'),
-    ('81',  'Japão',           'JPY'),
-    ('82',  'Coreia do Sul',   'KRW'),
-    ('86',  'China',           'CNY'),
-    ('91',  'Índia',           'INR'),
-    ('52',  'México',          'MXN'),
-    ('54',  'Argentina',       'ARS'),
-    ('56',  'Chile',           'CLP'),
-    ('57',  'Colômbia',        'COP'),
-    ('51',  'Peru',            'PEN'),
-    ('598', 'Uruguai',         'UYU'),
-    ('595', 'Paraguai',        'PYG'),
-    ('61',  'Austrália',       'AUD'),
-    ('64',  'Nova Zelândia',   'NZD'),
-    ('27',  'África do Sul',   'ZAR'),
-    ('41',  'Suíça',           'CHF'),
-    ('46',  'Suécia',          'SEK'),
-    ('47',  'Noruega',         'NOK'),
-    ('45',  'Dinamarca',       'DKK'),
-    ('48',  'Polônia',         'PLN'),
-    ('90',  'Turquia',         'TRY'),
-    ('7',   'Rússia',          'RUB'),
-    ('65',  'Singapura',       'SGD'),
-    ('852', 'Hong Kong',       'HKD'),
-    ('62',  'Indonésia',       'IDR'),
-    ('63',  'Filipinas',       'PHP'),
-    ('66',  'Tailândia',       'THB'),
-    ('971', 'Emirados Árabes', 'AED'),
-    ('966', 'Arábia Saudita',  'SAR'),
-    ('20',  'Egito',           'EGP'),
-    ('234', 'Nigéria',         'NGN'),
-    ('972', 'Israel',          'ILS'),
-    ('380', 'Ucrânia',         'UAH');
+CREATE TEMP TABLE tmp_pais (ddi varchar(4), nome varchar(255), moeda varchar(3), peso numeric) ON COMMIT DROP;
+INSERT INTO tmp_pais (ddi, nome, moeda, peso) VALUES
+    -- África
+    ('213','Argélia','DZD',0.3),('244','Angola','AOA',0.15),('229','Benin','XOF',0.05),
+    ('267','Botsuana','BWP',0.05),('226','Burkina Faso','XOF',0.05),('257','Burundi','BIF',0.05),
+    ('238','Cabo Verde','CVE',0.05),('237','Camarões','XAF',0.1),('236','República Centro-Africana','XAF',0.05),
+    ('235','Chade','XAF',0.05),('269','Comores','KMF',0.05),('242','República do Congo','XAF',0.05),
+    ('243','República Democrática do Congo','CDF',0.1),('253','Djibuti','DJF',0.05),('20','Egito','EGP',1.0),
+    ('240','Guiné Equatorial','XAF',0.05),('291','Eritreia','ERN',0.05),('268','Essuatíni','SZL',0.05),
+    ('251','Etiópia','ETB',0.2),('241','Gabão','XAF',0.05),('220','Gâmbia','GMD',0.05),
+    ('233','Gana','GHS',0.2),('224','Guiné','GNF',0.05),('245','Guiné-Bissau','XOF',0.05),
+    ('225','Costa do Marfim','XOF',0.1),('254','Quênia','KES',0.3),('266','Lesoto','LSL',0.05),
+    ('231','Libéria','LRD',0.05),('218','Líbia','LYD',0.05),('261','Madagascar','MGA',0.05),
+    ('265','Malawi','MWK',0.05),('223','Mali','XOF',0.05),('222','Mauritânia','MRU',0.05),
+    ('230','Maurício','MUR',0.05),('212','Marrocos','MAD',0.5),('258','Moçambique','MZN',0.1),
+    ('264','Namíbia','NAD',0.05),('227','Níger','XOF',0.05),('234','Nigéria','NGN',1.0),
+    ('250','Ruanda','RWF',0.05),('239','São Tomé e Príncipe','STN',0.05),('221','Senegal','XOF',0.1),
+    ('248','Seicheles','SCR',0.05),('232','Serra Leoa','SLE',0.05),('252','Somália','SOS',0.05),
+    ('27','África do Sul','ZAR',0.8),('211','Sudão do Sul','SSP',0.05),('249','Sudão','SDG',0.05),
+    ('255','Tanzânia','TZS',0.15),('228','Togo','XOF',0.05),('216','Tunísia','TND',0.2),
+    ('256','Uganda','UGX',0.1),('260','Zâmbia','ZMW',0.05),('263','Zimbábue','ZWG',0.05),
+    -- Américas
+    ('1268','Antígua e Barbuda','XCD',0.05),('54','Argentina','ARS',1.5),('1242','Bahamas','BSD',0.05),
+    ('1246','Barbados','BBD',0.05),('501','Belize','BZD',0.05),('591','Bolívia','BOB',0.2),
+    ('55','Brasil','BRL',9.0),('1613','Canadá','CAD',1.5),('56','Chile','CLP',0.7),
+    ('57','Colômbia','COP',1.2),('506','Costa Rica','CRC',0.1),('53','Cuba','CUP',0.05),
+    ('1767','Dominica','XCD',0.05),('1809','República Dominicana','DOP',0.2),('593','Equador','USD',0.3),
+    ('503','El Salvador','USD',0.1),('1473','Granada','XCD',0.05),('502','Guatemala','GTQ',0.2),
+    ('592','Guiana','GYD',0.05),('509','Haiti','HTG',0.05),('504','Honduras','HNL',0.1),
+    ('1876','Jamaica','JMD',0.05),('52','México','MXN',4.0),('505','Nicarágua','NIO',0.05),
+    ('507','Panamá','PAB',0.1),('595','Paraguai','PYG',0.15),('51','Peru','PEN',0.6),
+    ('1869','São Cristóvão e Névis','XCD',0.05),('1758','Santa Lúcia','XCD',0.05),
+    ('1784','São Vicente e Granadinas','XCD',0.05),('597','Suriname','SRD',0.05),
+    ('1868','Trinidad e Tobago','TTD',0.05),('1','Estados Unidos','USD',12.0),('598','Uruguai','UYU',0.2),
+    ('58','Venezuela','VES',0.4),
+    -- Ásia
+    ('93','Afeganistão','AFN',0.05),('374','Armênia','AMD',0.05),('994','Azerbaijão','AZN',0.1),
+    ('973','Bahrein','BHD',0.05),('880','Bangladesh','BDT',0.8),('975','Butão','BTN',0.05),
+    ('673','Brunei','BND',0.05),('855','Camboja','KHR',0.1),('86','China','CNY',4.0),
+    ('357','Chipre','EUR',0.05),('995','Geórgia','GEL',0.05),('91','Índia','INR',10.0),
+    ('62','Indonésia','IDR',5.0),('98','Irã','IRR',0.5),('964','Iraque','IQD',0.3),
+    ('972','Israel','ILS',0.3),('81','Japão','JPY',3.0),('962','Jordânia','JOD',0.1),
+    ('77','Cazaquistão','KZT',0.3),('965','Kuwait','KWD',0.1),('996','Quirguistão','KGS',0.05),
+    ('856','Laos','LAK',0.05),('961','Líbano','LBP',0.05),('60','Malásia','MYR',0.8),
+    ('960','Maldivas','MVR',0.05),('976','Mongólia','MNT',0.05),('95','Mianmar','MMK',0.1),
+    ('977','Nepal','NPR',0.1),('850','Coreia do Norte','KPW',0.05),('968','Omã','OMR',0.05),
+    ('92','Paquistão','PKR',1.0),('970','Palestina','ILS',0.05),('63','Filipinas','PHP',2.5),
+    ('974','Catar','QAR',0.05),('966','Arábia Saudita','SAR',0.8),('65','Singapura','SGD',0.3),
+    ('82','Coreia do Sul','KRW',2.5),('94','Sri Lanka','LKR',0.1),('963','Síria','SYP',0.05),
+    ('886','Taiwan','TWD',0.6),('992','Tadjiquistão','TJS',0.05),('66','Tailândia','THB',1.5),
+    ('670','Timor-Leste','USD',0.05),('90','Turquia','TRY',2.0),('993','Turcomenistão','TMT',0.05),
+    ('971','Emirados Árabes Unidos','AED',0.3),('998','Uzbequistão','UZS',0.1),('84','Vietnã','VND',2.0),
+    ('967','Iêmen','YER',0.05),('852','Hong Kong','HKD',0.3),('853','Macau','MOP',0.05),
+    -- Europa
+    ('355','Albânia','ALL',0.05),('376','Andorra','EUR',0.05),('43','Áustria','EUR',0.3),
+    ('375','Bielorrússia','BYN',0.2),('32','Bélgica','EUR',0.4),('387','Bósnia e Herzegovina','BAM',0.05),
+    ('359','Bulgária','EUR',0.2),('385','Croácia','EUR',0.1),('420','Tchéquia','CZK',0.3),
+    ('45','Dinamarca','DKK',0.2),('372','Estônia','EUR',0.05),('358','Finlândia','EUR',0.2),
+    ('33','França','EUR',2.5),('49','Alemanha','EUR',3.0),('30','Grécia','EUR',0.3),
+    ('36','Hungria','HUF',0.3),('354','Islândia','ISK',0.05),('353','Irlanda','EUR',0.2),
+    ('39','Itália','EUR',2.0),('383','Kosovo','EUR',0.05),('371','Letônia','EUR',0.05),
+    ('423','Liechtenstein','CHF',0.05),('370','Lituânia','EUR',0.05),('352','Luxemburgo','EUR',0.05),
+    ('356','Malta','EUR',0.05),('373','Moldávia','MDL',0.05),('377','Mônaco','EUR',0.05),
+    ('382','Montenegro','EUR',0.05),('31','Países Baixos','EUR',0.7),('389','Macedônia do Norte','MKD',0.05),
+    ('47','Noruega','NOK',0.2),('48','Polônia','PLN',1.2),('351','Portugal','EUR',0.5),
+    ('40','Romênia','RON',0.4),('7','Rússia','RUB',3.0),('378','San Marino','EUR',0.05),
+    ('381','Sérvia','RSD',0.1),('421','Eslováquia','EUR',0.1),('386','Eslovênia','EUR',0.05),
+    ('34','Espanha','EUR',2.0),('46','Suécia','SEK',0.4),('41','Suíça','CHF',0.3),
+    ('380','Ucrânia','UAH',0.7),('44','Reino Unido','GBP',3.0),('379','Vaticano','EUR',0.05),
+    -- Oceania
+    ('61','Austrália','AUD',1.0),('679','Fiji','FJD',0.05),('686','Kiribati','AUD',0.05),
+    ('692','Ilhas Marshall','USD',0.05),('691','Micronésia','USD',0.05),('674','Nauru','AUD',0.05),
+    ('64','Nova Zelândia','NZD',0.2),('680','Palau','USD',0.05),('675','Papua-Nova Guiné','PGK',0.05),
+    ('685','Samoa','WST',0.05),('677','Ilhas Salomão','SBD',0.05),('676','Tonga','TOP',0.05),
+    ('688','Tuvalu','AUD',0.05),('678','Vanuatu','VUV',0.05);
 
--- Cada país fictício usa uma moeda fictícia diferente
 INSERT INTO steam_do_bedo.Pais (ddi, nome, moeda)
-SELECT (1000 + rn)::text, 'País Fictício ' || lpad(rn::text, 3, '0'), moeda
-FROM (
-    SELECT moeda, row_number() OVER (ORDER BY moeda) AS rn
-    FROM steam_do_bedo.Conversao
-    WHERE nome LIKE 'Moeda Fictícia%'
-) AS m
-WHERE rn <= 960;
+SELECT ddi, nome, moeda FROM tmp_pais ORDER BY ddi;
+
+-- Distribuição acumulada dos países para o sorteio ponderado: um número
+-- u em [0, 1) cai no país cujo intervalo [lo, hi) o contém. O índice em
+-- hi permite achar o país com uma busca, sem varrer a lista.
+CREATE TEMP TABLE tmp_pais_cdf ON COMMIT DROP AS
+SELECT ddi,
+       sum(peso) OVER (ORDER BY ddi) / sum(peso) OVER () AS hi
+FROM tmp_pais;
+CREATE INDEX ON tmp_pais_cdf (hi);
+ANALYZE tmp_pais_cdf;
 
 -- ---------------------------------------------------------------------
--- Empresa: 24 reais + 976 fictícias = 1000
+-- Empresa: ~70 empresas reais (donas de plataformas e marcas que
+-- patrocinam streamers) + fictícias até 3.000.
+-- "peso_patrocinio" (só na carga): força de cada marca no sorteio de
+-- patrocínios. Donas de plataforma têm peso 0 (não patrocinam canais).
 -- ---------------------------------------------------------------------
-INSERT INTO steam_do_bedo.Empresa (nome, nome_fantasia) VALUES
-    ('Google LLC',                      'Google'),
-    ('YouTube LLC',                     'YouTube'),
-    ('Amazon.com Inc.',                 'Amazon'),
-    ('Twitch Interactive Inc.',         'Twitch'),
-    ('Justin.tv Inc.',                  'Justin.tv'),
-    ('Meta Platforms Inc.',             'Meta'),
-    ('ByteDance Ltd.',                  'ByteDance'),
-    ('Tencent Holdings Ltd.',           'Tencent'),
-    ('Kick Streaming Pty Ltd.',         'Kick'),
-    ('Huya Inc.',                       'Huya'),
-    ('Bilibili Inc.',                   'Bilibili'),
-    ('Rumble Inc.',                     'Rumble'),
-    ('Microsoft Corporation',           'Microsoft'),
-    ('Sony Group Corporation',          'Sony'),
-    ('Nintendo Co. Ltd.',               'Nintendo'),
-    ('Riot Games Inc.',                 'Riot Games'),
-    ('Valve Corporation',               'Valve'),
-    ('Epic Games Inc.',                 'Epic Games'),
-    ('Garena Online Pte. Ltd.',         'Garena'),
-    ('Ubisoft Entertainment SA',        'Ubisoft'),
-    ('Razer Inc.',                      'Razer'),
-    ('Logitech International SA',       'Logitech'),
-    ('KaBuM! Comércio Eletrônico S.A.', 'KaBuM!'),
-    ('LOUD Esports Ltda.',              'LOUD');
+CREATE TEMP TABLE tmp_empresa_real (nome varchar(255), fantasia varchar(255), ddi varchar(4), peso_patrocinio numeric) ON COMMIT DROP;
+INSERT INTO tmp_empresa_real VALUES
+    -- Donas, fundadoras ou responsáveis de plataformas
+    ('Google LLC','Google','1',0),('YouTube LLC','YouTube','1',0),('Amazon.com Inc.','Amazon','1',0),
+    ('Twitch Interactive Inc.','Twitch','1',0),('Justin.tv Inc.','Justin.tv','1',0),
+    ('Meta Platforms Inc.','Meta','1',0),('Instagram LLC','Instagram','1',0),
+    ('ByteDance Ltd.','ByteDance','86',0),('TikTok Pte. Ltd.','TikTok','65',0),
+    ('Beijing Douyin Information Service Co. Ltd.','Douyin','86',0),('Kuaishou Technology','Kuaishou','86',0),
+    ('Tencent Holdings Ltd.','Tencent','86',0),('Kick Streaming Pty Ltd.','Kick','61',0),
+    ('Huya Inc.','Huya','86',0),('JOYY Inc.','JOYY','86',0),('Douyu International Holdings Ltd.','Douyu','86',0),
+    ('Bilibili Inc.','Bilibili','86',0),('Snap Inc.','Snapchat','1',0),('Nowcom Co. Ltd.','Nowcom','82',0),
+    ('SOOP Co. Ltd.','SOOP','82',0),('Naver Corporation','Naver','82',0),('Rumble Inc.','Rumble','1',0),
+    ('Lino Network Inc.','Lino','1',0),('BitTorrent Inc.','BitTorrent','1',0),
+    ('Microsoft Corporation','Microsoft','1',0),('BIGO Technology Pte. Ltd.','BIGO','65',0),
+    ('Triller Inc.','Triller','1',0),('Triller Group Inc.','Triller Group','1',0),
+    ('Dailymotion SA','Dailymotion','33',0),('Vivendi SE','Vivendi','33',0),
+    ('Connected Ventures LLC','Connected Ventures','1',0),('Vimeo Inc.','Vimeo','1',0),
+    ('Valve Corporation','Valve','1',0),('Pocket Aces Pictures Pvt. Ltd.','Pocket Aces','91',0),
+    ('Rooter Sports Technologies Pvt. Ltd.','Rooter','91',0),('DMM.com LLC','DMM','81',0),
+    -- Marcas que patrocinam (peso maior = patrocina mais canais)
+    ('Red Bull GmbH','Red Bull','43',10),('Monster Energy Company','Monster Energy','1',8),
+    ('Razer Inc.','Razer','65',9),('Logitech International SA','Logitech G','41',8),
+    ('Corsair Gaming Inc.','Corsair','1',7),('HP Inc.','HyperX','1',7),('Intel Corporation','Intel','1',6),
+    ('Advanced Micro Devices Inc.','AMD','1',6),('NVIDIA Corporation','NVIDIA','1',6),
+    ('Samsung Electronics Co. Ltd.','Samsung','82',5),('Secretlab SG Pte. Ltd.','Secretlab','65',6),
+    ('Gamma Enterprises LLC','G FUEL','1',6),('Sony Group Corporation','PlayStation','81',5),
+    ('Nintendo Co. Ltd.','Nintendo','81',3),('Riot Games Inc.','Riot Games','1',5),
+    ('Epic Games Inc.','Epic Games','1',5),('Ubisoft Entertainment SA','Ubisoft','33',4),
+    ('Electronic Arts Inc.','EA','1',4),('Activision Blizzard Inc.','Activision Blizzard','1',4),
+    ('Take-Two Interactive Software Inc.','Take-Two','1',3),('Krafton Inc.','Krafton','82',3),
+    ('miHoYo Co. Ltd.','HoYoverse','86',4),('Plarium Global Ltd.','Plarium','972',4),
+    ('Nord Security','NordVPN','370',5),('Garena Online Pte. Ltd.','Garena','65',3),
+    ('KaBuM! Comércio Eletrônico S.A.','KaBuM!','55',4),('LOUD Esports Ltda.','LOUD','55',2),
+    ('The Coca-Cola Company','Coca-Cola','1',3),('PepsiCo Inc.','PepsiCo','1',3),
+    ('Nike Inc.','Nike','1',2),('Adidas AG','Adidas','49',2),('Mastercard Inc.','Mastercard','1',3),
+    ('Visa Inc.','Visa','1',2),('Spotify AB','Spotify','46',2),('Netflix Inc.','Netflix','1',2),
+    ('Uber Technologies Inc.','Uber','1',2),('McDonald''s Corporation','McDonald''s','1',2),
+    ('Domino''s Pizza Inc.','Domino''s','1',2),('MercadoLibre Inc.','Mercado Livre','54',3),
+    ('Nu Pagamentos S.A.','Nubank','55',3),('Sea Limited','Shopee','65',3),
+    ('Alibaba Group Holding Ltd.','AliExpress','86',2);
 
--- O número no nome garante a restrição UNIQUE de Empresa.nome
-WITH fantasias AS (
-    SELECT i,
-           (ARRAY['Nexus', 'Orion', 'Vertex', 'Aurora', 'Quantum', 'Atlas', 'Helix',
-                  'Pulse', 'Zenith', 'Nimbus', 'Apex', 'Lumen', 'Vortex', 'Prisma',
-                  'Fênix', 'Delta', 'Sigma', 'Astra', 'Boreal', 'Cobalto'])[1 + floor(random() * 20)::int]
-           || ' ' ||
-           (ARRAY['Games', 'Tecnologia', 'Energéticos', 'Periféricos', 'Telecom', 'Bebidas',
-                  'Hardware', 'Educação', 'Moda', 'Alimentos', 'Seguros', 'Software',
-                  'Eletrônicos'])[1 + floor(random() * 13)::int] AS fantasia
-    FROM generate_series(1, 976) AS i
-)
 INSERT INTO steam_do_bedo.Empresa (nome, nome_fantasia)
-SELECT fantasia || ' ' || lpad(i::text, 4, '0') || ' '
-       || (ARRAY['Ltda.', 'S.A.', 'Inc.', 'LLC', 'GmbH', 'Ltd.'])[1 + floor(random() * 6)::int],
-       fantasia
-FROM fantasias
+SELECT nome, fantasia FROM tmp_empresa_real ORDER BY nome;
+
+-- Fictícias: o número no nome garante o UNIQUE (nome) (DEC-009).
+-- Patrocinam com peso 1, então somadas pesam como as marcas reais.
+INSERT INTO steam_do_bedo.Empresa (nome, nome_fantasia)
+SELECT f || ' ' || lpad(i::text, 4, '0') || ' '
+       || (ARRAY['Ltda.','S.A.','Inc.','LLC','GmbH','Ltd.'])[1 + floor(random() * 6)::int],
+       f
+FROM generate_series(1, 3000 - (SELECT count(*) FROM tmp_empresa_real)) AS i
+CROSS JOIN LATERAL (
+    SELECT (ARRAY['Nexus','Orion','Vertex','Aurora','Quantum','Atlas','Helix','Pulse','Zenith',
+                  'Nimbus','Apex','Lumen','Vortex','Prisma','Fênix','Delta','Sigma','Astra',
+                  'Boreal','Cobalto'])[1 + floor(random() * 20)::int]
+           || ' ' ||
+           (ARRAY['Games','Tecnologia','Energéticos','Periféricos','Telecom','Bebidas','Hardware',
+                  'Educação','Moda','Alimentos','Seguros','Software','Eletrônicos','Apostas Esportivas',
+                  'Fintech'])[1 + floor(random() * 15)::int] AS f
+    WHERE i > 0   -- referência a i: força um sorteio por linha
+) AS x
 ORDER BY i;
 
+-- Marcas candidatas a patrocinar, em ordem de peso decrescente: o sorteio
+-- por lei de potência (pg_temp.potencia) escolhe as primeiras muito mais.
+CREATE TEMP TABLE tmp_patrocinador ON COMMIT DROP AS
+SELECT row_number() OVER (ORDER BY coalesce(r.peso_patrocinio, 1) DESC, random()) AS rk, e.nro
+FROM steam_do_bedo.Empresa e
+LEFT JOIN tmp_empresa_real r ON r.nome = e.nome
+WHERE coalesce(r.peso_patrocinio, 1) > 0;
+CREATE UNIQUE INDEX ON tmp_patrocinador (rk);
+ANALYZE tmp_patrocinador;
+
 -- ---------------------------------------------------------------------
--- EmpresaPais: país de origem de cada empresa + segunda sede para ~20%
--- Empresas fictícias: ~45% Brasil, ~40% outro país real, ~15% país fictício
+-- EmpresaPais: sede de cada empresa (país conhecido para as reais;
+-- sorteado pelo peso dos países para as fictícias) e segunda sede para
+-- ~15% (EUA, ou Brasil para quem já é dos EUA).
+-- id_nacional: formato do país (CNPJ no Brasil, EIN nos EUA, genérico nos
+-- demais), derivado do nro para ser único no país (DEC-025).
 -- ---------------------------------------------------------------------
-WITH paises AS (
-    SELECT ddi,
-           length(ddi) <= 3                                           AS real,
-           row_number() OVER (PARTITION BY length(ddi) <= 3 ORDER BY ddi) AS r,
-           count(*)     OVER (PARTITION BY length(ddi) <= 3)              AS n
-    FROM steam_do_bedo.Pais
-),
-sorteio AS (
-    SELECT e.nro, r.ddi AS ddi_real, random() AS u_pais, random() AS u_idx, random() < 0.2 AS segunda_sede
+WITH origem AS (
+    SELECT e.nro,
+           coalesce(r.ddi, (SELECT c.ddi FROM tmp_pais_cdf c WHERE c.hi > x.u ORDER BY c.hi LIMIT 1)) AS ddi,
+           x.segunda
     FROM steam_do_bedo.Empresa e
-    LEFT JOIN (VALUES
-        ('Google LLC', '1'), ('YouTube LLC', '1'), ('Amazon.com Inc.', '1'),
-        ('Twitch Interactive Inc.', '1'), ('Justin.tv Inc.', '1'), ('Meta Platforms Inc.', '1'),
-        ('ByteDance Ltd.', '86'), ('Tencent Holdings Ltd.', '86'), ('Kick Streaming Pty Ltd.', '61'),
-        ('Huya Inc.', '86'), ('Bilibili Inc.', '86'), ('Rumble Inc.', '1'),
-        ('Microsoft Corporation', '1'), ('Sony Group Corporation', '81'), ('Nintendo Co. Ltd.', '81'),
-        ('Riot Games Inc.', '1'), ('Valve Corporation', '1'), ('Epic Games Inc.', '1'),
-        ('Garena Online Pte. Ltd.', '65'), ('Ubisoft Entertainment SA', '33'), ('Razer Inc.', '65'),
-        ('Logitech International SA', '41'), ('KaBuM! Comércio Eletrônico S.A.', '55'),
-        ('LOUD Esports Ltda.', '55')
-    ) AS r(nome, ddi) ON r.nome = e.nome
-),
-origem AS (
-    SELECT s.nro, s.segunda_sede,
-           CASE WHEN s.ddi_real IS NOT NULL THEN s.ddi_real
-                WHEN s.u_pais < 0.45        THEN '55'
-                WHEN s.u_pais < 0.85        THEN pr.ddi
-                ELSE pf.ddi END AS ddi
-    FROM sorteio s
-    JOIN paises pr ON pr.real     AND pr.r = 1 + floor(s.u_idx * pr.n)
-    JOIN paises pf ON NOT pf.real AND pf.r = 1 + floor(s.u_idx * pf.n)
+    LEFT JOIN tmp_empresa_real r ON r.nome = e.nome
+    CROSS JOIN LATERAL (SELECT random() AS u, random() < 0.15 AS segunda WHERE e.nro > 0) x
 ),
 sedes AS (
     SELECT nro, ddi FROM origem
     UNION ALL
-    SELECT nro, CASE WHEN ddi = '1' THEN '55' ELSE '1' END FROM origem WHERE segunda_sede
+    SELECT nro, CASE WHEN ddi = '1' THEN '55' ELSE '1' END FROM origem WHERE segunda
 )
 INSERT INTO steam_do_bedo.EmpresaPais (nro_empresa, ddi_pais, id_nacional)
 SELECT nro, ddi,
        CASE ddi
-           -- CNPJ: 00.000.000/0001-00
-           WHEN '55' THEN regexp_replace(lpad(floor(random() * 100000000)::bigint::text, 8, '0'),
-                                         '(\d{2})(\d{3})(\d{3})', '\1.\2.\3')
-                          || '/0001-' || lpad(floor(random() * 100)::int::text, 2, '0')
-           -- EIN: 00-0000000
-           WHEN '1'  THEN regexp_replace(lpad(floor(random() * 1000000000)::bigint::text, 9, '0'),
-                                         '(\d{2})(\d{7})', '\1-\2')
-           ELSE 'NID' || ddi || '-' || upper(substr(md5(random()::text), 1, 10))
+           WHEN '55' THEN regexp_replace(lpad(nro::text, 8, '0'), '(\d{2})(\d{3})(\d{3})', '\1.\2.\3')
+                          || '/0001-' || lpad((nro % 97)::text, 2, '0')
+           WHEN '1'  THEN regexp_replace(lpad((nro * 7919)::text, 9, '0'), '(\d{2})(\d{7})', '\1-\2')
+           ELSE 'NID' || ddi || '-' || lpad(nro::text, 8, '0')
        END
-FROM sedes;
+FROM sedes
+ORDER BY nro, ddi;
 
 -- ---------------------------------------------------------------------
--- Plataforma: 10 reais + 990 fictícias = 1000
--- qtd_users (derivado) é calculado ao final do script
+-- Plataforma: 28 plataformas reais de streaming de jogos, de vídeo longo
+-- (lives e VODs), curto (shorts) e mistas (DEC-020).
+-- Colunas só da carga:
+--   peso    participação no sorteio das contas dos usuários (mercado);
+--   formato 'longo', 'curto' ou 'misto' (YouTube, Bilibili...): define
+--           duração, número de vídeos por canal e comentários online;
+--   fim     data de encerramento (Mixer: 2020-07-22); nenhum canal, vídeo
+--           ou comentário é gerado depois dela.
+-- Datas de fundação aproximadas. qtd_users é calculado no INSERT, a
+-- partir das contas preparadas abaixo (DEC-027, sem UPDATE final).
 -- ---------------------------------------------------------------------
-INSERT INTO steam_do_bedo.Plataforma (nome, empresa_fund, empresa_resp, data_fund)
-SELECT p.nome, ef.nro, er.nro, p.data_fund
-FROM (VALUES
-    (1,  'YouTube',         'YouTube LLC',             'Google LLC',              DATE '2005-02-14'),
-    (2,  'Twitch',          'Justin.tv Inc.',          'Twitch Interactive Inc.', DATE '2011-06-06'),
-    (3,  'Kick',            'Kick Streaming Pty Ltd.', 'Kick Streaming Pty Ltd.', DATE '2022-12-06'),
-    (4,  'Facebook Gaming', 'Meta Platforms Inc.',     'Meta Platforms Inc.',     DATE '2018-06-01'),
-    (5,  'TikTok Live',     'ByteDance Ltd.',          'ByteDance Ltd.',          DATE '2019-01-01'),
-    (6,  'Trovo',           'Tencent Holdings Ltd.',   'Tencent Holdings Ltd.',   DATE '2020-02-01'),
-    (7,  'Huya',            'Huya Inc.',               'Huya Inc.',               DATE '2014-11-01'),
-    (8,  'Bilibili Live',   'Bilibili Inc.',           'Bilibili Inc.',           DATE '2009-06-26'),
-    (9,  'Rumble',          'Rumble Inc.',             'Rumble Inc.',             DATE '2013-10-01'),
-    (10, 'Mixer',           'Microsoft Corporation',   'Microsoft Corporation',   DATE '2016-01-05')
-) AS p(ordem, nome, fundadora, responsavel, data_fund)
+CREATE TEMP TABLE tmp_plataforma (ord int, nome varchar(255), fundadora varchar(255), responsavel varchar(255),
+                                  data_fund date, peso numeric, formato text, fim timestamptz) ON COMMIT DROP;
+INSERT INTO tmp_plataforma VALUES
+    ( 1,'YouTube','YouTube LLC','Google LLC',DATE '2005-02-14',30,'misto',NULL),
+    ( 2,'Twitch','Justin.tv Inc.','Twitch Interactive Inc.',DATE '2011-06-06',8,'longo',NULL),
+    ( 3,'TikTok','ByteDance Ltd.','TikTok Pte. Ltd.',DATE '2017-05-01',20,'curto',NULL),
+    ( 4,'Instagram','Instagram LLC','Meta Platforms Inc.',DATE '2010-10-06',12,'curto',NULL),
+    ( 5,'Facebook Gaming','Meta Platforms Inc.','Meta Platforms Inc.',DATE '2018-06-01',6,'longo',NULL),
+    ( 6,'Kick','Kick Streaming Pty Ltd.','Kick Streaming Pty Ltd.',DATE '2022-12-06',3,'longo',NULL),
+    ( 7,'Kwai','Kuaishou Technology','Kuaishou Technology',DATE '2019-01-01',3,'curto',NULL),
+    ( 8,'Douyin','ByteDance Ltd.','Beijing Douyin Information Service Co. Ltd.',DATE '2016-09-20',2,'curto',NULL),
+    ( 9,'Kuaishou','Kuaishou Technology','Kuaishou Technology',DATE '2011-03-01',2,'curto',NULL),
+    (10,'Bilibili','Bilibili Inc.','Bilibili Inc.',DATE '2009-06-26',2,'misto',NULL),
+    (11,'Huya','JOYY Inc.','Huya Inc.',DATE '2014-11-24',1,'longo',NULL),
+    (12,'Douyu','Douyu International Holdings Ltd.','Douyu International Holdings Ltd.',DATE '2014-01-01',1,'longo',NULL),
+    (13,'Snapchat','Snap Inc.','Snap Inc.',DATE '2011-09-16',2,'curto',NULL),
+    (14,'Trovo','Tencent Holdings Ltd.','Tencent Holdings Ltd.',DATE '2020-02-01',0.5,'longo',NULL),
+    (15,'SOOP','Nowcom Co. Ltd.','SOOP Co. Ltd.',DATE '2006-03-09',0.8,'longo',NULL),
+    (16,'CHZZK','Naver Corporation','Naver Corporation',DATE '2023-12-19',0.5,'longo',NULL),
+    (17,'Rumble','Rumble Inc.','Rumble Inc.',DATE '2013-10-01',0.5,'misto',NULL),
+    (18,'DLive','Lino Network Inc.','BitTorrent Inc.',DATE '2017-12-01',0.2,'longo',NULL),
+    (19,'Nimo TV','Huya Inc.','Huya Inc.',DATE '2018-05-01',0.3,'longo',NULL),
+    (20,'Mixer','Microsoft Corporation','Microsoft Corporation',DATE '2016-01-05',0.3,'longo',TIMESTAMPTZ '2020-07-22 00:00+00'),
+    (21,'Likee','BIGO Technology Pte. Ltd.','JOYY Inc.',DATE '2017-07-01',0.5,'curto',NULL),
+    (22,'Triller','Triller Inc.','Triller Group Inc.',DATE '2015-07-01',0.2,'curto',NULL),
+    (23,'Dailymotion','Dailymotion SA','Vivendi SE',DATE '2005-03-15',0.5,'misto',NULL),
+    (24,'Vimeo','Connected Ventures LLC','Vimeo Inc.',DATE '2004-11-01',0.3,'longo',NULL),
+    (25,'Steam Broadcasting','Valve Corporation','Valve Corporation',DATE '2016-12-05',0.5,'longo',NULL),
+    (26,'Loco','Pocket Aces Pictures Pvt. Ltd.','Pocket Aces Pictures Pvt. Ltd.',DATE '2020-01-01',0.3,'longo',NULL),
+    (27,'Rooter','Rooter Sports Technologies Pvt. Ltd.','Rooter Sports Technologies Pvt. Ltd.',DATE '2016-01-01',0.2,'longo',NULL),
+    (28,'Mildom','DMM.com LLC','DMM.com LLC',DATE '2019-01-01',0.2,'longo',NULL);
+
+CREATE TEMP TABLE tmp_plat_cdf ON COMMIT DROP AS
+SELECT ord, sum(peso) OVER (ORDER BY ord) / sum(peso) OVER () AS hi FROM tmp_plataforma;
+CREATE INDEX ON tmp_plat_cdf (hi);
+ANALYZE tmp_plat_cdf;
+
+-- ---------------------------------------------------------------------
+-- Usuario: 500 mil × escala.
+-- nick único (palavra + palavra + número do usuário); email deriva do
+-- nick; telefone único (DDI do país + número do usuário com 9 dígitos,
+-- até 13 caracteres), 15% sem telefone (é nulável, DEC-011).
+-- País de residência sorteado pelo peso dos países (concentrado).
+-- data_nasc entre 1965 e 2012 (13 anos ou mais em 2025), mais jovens
+-- com mais frequência (público de jogos).
+-- ---------------------------------------------------------------------
+INSERT INTO steam_do_bedo.Usuario (nick, email, data_nasc, telefone, end_postal, pais_residencia)
+SELECT s.nick,
+       s.nick || '@' || (ARRAY['gmail.com','outlook.com','yahoo.com','proton.me','icloud.com',
+                               'hotmail.com','qq.com','naver.com'])[1 + floor(random() * 8)::int],
+       DATE '2012-12-31' - floor(power(random(), 1.6) * 17500)::int,
+       CASE WHEN random() < 0.85 THEN p.ddi || lpad(s.i::text, 9, '0') END,
+       'Rua ' || (ARRAY['das Flores','Central','do Sol','Principal','da Paz','Nova','do Comércio',
+                        'dos Pinheiros'])[1 + floor(random() * 8)::int]
+              || ', ' || (1 + floor(random() * 2000)::int) || ' - ' || p.nome,
+       p.ddi
+FROM (
+    SELECT i,
+           (ARRAY['shadow','pixel','ninja','storm','lunar','turbo','cyber','frost','blaze','viper',
+                  'nova','echo','titan','ghost','omega','rapid','neon','zero','alpha','kraken',
+                  'gato','lobo','fenix','dragao','sombra','raio','pirata','mago','noob','pro'])[1 + floor(random() * 30)::int]
+           || (ARRAY['_','.','','x'])[1 + floor(random() * 4)::int]
+           || (ARRAY['br','gg','tv','yt','hd','xd','op','99','ace','king','queen','dev','bot',
+                     'main','smurf','lol'])[1 + floor(random() * 16)::int]
+           || '_' || i AS nick,
+           random() AS u
+    FROM generate_series(1, (SELECT n_usuarios FROM seed_param)) AS i
+) s
+CROSS JOIN LATERAL (SELECT c.ddi FROM tmp_pais_cdf c WHERE c.hi > s.u ORDER BY c.hi LIMIT 1) pc
+JOIN tmp_pais p ON p.ddi = pc.ddi
+ORDER BY s.i;
+ANALYZE steam_do_bedo.usuario;   -- estatística para os JOINs seguintes (ver cabeçalho)
+
+-- ---------------------------------------------------------------------
+-- Contas (PlataformaUsuario), preparadas antes de Plataforma para que
+-- qtd_users seja calculado no INSERT da plataforma.
+-- Número de contas por usuário: 1 (45%), 2 (30%), 3 (15%), 4 (7%) ou
+-- 5 (3%); cada conta sorteia a plataforma pelo peso de mercado.
+-- Sorteios repetidos da mesma plataforma viram uma conta só (DISTINCT),
+-- o que também é realista: quem tem mais contas está nas maiores.
+-- "atividade" (só na carga): posição aleatória do usuário na plataforma,
+-- usada depois para que poucos usuários comentem e assinem muito.
+-- ---------------------------------------------------------------------
+CREATE TEMP TABLE tmp_conta ON COMMIT DROP AS
+SELECT DISTINCT u.id_usuario, pc.ord
+FROM steam_do_bedo.Usuario u
+CROSS JOIN LATERAL (
+    SELECT CASE WHEN r < 0.45 THEN 1 WHEN r < 0.75 THEN 2 WHEN r < 0.90 THEN 3
+                WHEN r < 0.97 THEN 4 ELSE 5 END AS n
+    FROM (SELECT random() AS r WHERE u.id_usuario > 0) z
+) q
+CROSS JOIN LATERAL generate_series(1, q.n) AS k
+CROSS JOIN LATERAL (SELECT random() AS u WHERE k > 0) w
+CROSS JOIN LATERAL (SELECT c.ord FROM tmp_plat_cdf c WHERE c.hi > w.u ORDER BY c.hi LIMIT 1) pc;
+ANALYZE tmp_conta;
+
+INSERT INTO steam_do_bedo.Plataforma (nome, qtd_users, empresa_fund, empresa_resp, data_fund)
+SELECT p.nome,
+       (SELECT count(*) FROM tmp_conta c WHERE c.ord = p.ord),   -- derivado calculado na carga
+       ef.nro, er.nro, p.data_fund
+FROM tmp_plataforma p
 JOIN steam_do_bedo.Empresa ef ON ef.nome = p.fundadora
 JOIN steam_do_bedo.Empresa er ON er.nome = p.responsavel
-ORDER BY p.ordem;
+ORDER BY p.ord;
 
--- Fundadora sorteada; em 60% dos casos ela também é a responsável
-WITH empresas AS (
-    SELECT nro, row_number() OVER (ORDER BY nro) AS r, count(*) OVER () AS n
-    FROM steam_do_bedo.Empresa
-),
-sorteio AS (
-    SELECT i, random() AS u_fund, random() AS u_resp, random() < 0.6 AS mesma_empresa
-    FROM generate_series(11, 1000) AS i
-)
-INSERT INTO steam_do_bedo.Plataforma (nome, empresa_fund, empresa_resp, data_fund)
-SELECT (ARRAY['Stream', 'Live', 'Play', 'Cast', 'Game',
-              'Pixel', 'Hyper', 'Ultra', 'Mega', 'Neo'])[1 + floor(random() * 10)::int]
-       || (ARRAY['Wave', 'Hub', 'Zone', 'Box', 'Arena',
-                 'Spot', 'Flow', 'Nest', 'Verse', 'Land'])[1 + floor(random() * 10)::int]
-       || ' ' || lpad(s.i::text, 4, '0'),
-       ef.nro,
-       CASE WHEN s.mesma_empresa THEN ef.nro ELSE er.nro END,
-       DATE '2005-01-01' + floor(random() * 7000)::int
-FROM sorteio s
-JOIN empresas ef ON ef.r = 1 + floor(s.u_fund * ef.n)
-JOIN empresas er ON er.r = 1 + floor(s.u_resp * er.n)
-ORDER BY s.i;
+-- Mapa ordinal -> nro real (obtido pela chave natural, nunca fixo)
+CREATE TEMP TABLE tmp_plat ON COMMIT DROP AS
+SELECT t.ord, p.nro, t.formato, t.fim, coalesce(t.fim, s.fim) AS limite, p.data_fund
+FROM tmp_plataforma t
+JOIN steam_do_bedo.Empresa ef ON ef.nome = t.fundadora
+JOIN steam_do_bedo.Plataforma p ON p.nome = t.nome AND p.empresa_fund = ef.nro
+CROSS JOIN seed_param s;
+ANALYZE tmp_plat;
 
--- ---------------------------------------------------------------------
--- Usuario: 4000
--- País de residência: ~45% Brasil, ~40% outro país real, ~15% país fictício
--- ---------------------------------------------------------------------
-WITH paises AS (
-    SELECT ddi,
-           length(ddi) <= 3                                           AS real,
-           row_number() OVER (PARTITION BY length(ddi) <= 3 ORDER BY ddi) AS r,
-           count(*)     OVER (PARTITION BY length(ddi) <= 3)              AS n
-    FROM steam_do_bedo.Pais
-),
-sorteio AS (
-    SELECT i,
-           (ARRAY['shadow', 'pixel', 'ninja', 'storm', 'lunar', 'turbo', 'cyber',
-                  'frost', 'blaze', 'viper', 'nova', 'echo', 'titan', 'ghost',
-                  'omega', 'rapid', 'neon', 'zero', 'alpha', 'kraken'])[1 + i % 20]
-           || '_' || lpad(i::text, 4, '0') AS nick,
-           random() AS u_pais,
-           random() AS u_idx
-    FROM generate_series(1, 4000) AS i
-),
-residencia AS (
-    SELECT s.i, s.nick,
-           CASE WHEN s.u_pais < 0.45 THEN '55'
-                WHEN s.u_pais < 0.85 THEN pr.ddi
-                ELSE pf.ddi END AS ddi
-    FROM sorteio s
-    JOIN paises pr ON pr.real     AND pr.r = 1 + floor(s.u_idx * pr.n)
-    JOIN paises pf ON NOT pf.real AND pf.r = 1 + floor(s.u_idx * pf.n)
-)
-INSERT INTO steam_do_bedo.Usuario (nick, email, data_nasc, telefone, end_postal, pais_residencia)
-SELECT nick,
-       nick || '@' || (ARRAY['gmail.com', 'outlook.com', 'yahoo.com', 'proton.me',
-                             'uol.com.br', 'icloud.com', 'id.uff.br'])[1 + floor(random() * 7)::int],
-       DATE '1970-01-01' + floor(random() * 14600)::int,
-       ddi || lpad(floor(random() * 1000000000)::bigint::text, 9, '0'),
-       (ARRAY['Rua das Flores', 'Avenida Brasil', 'Rua São João', 'Avenida Paulista',
-              'Rua da Praia', 'Rua Sete de Setembro', 'Avenida Atlântica',
-              'Rua XV de Novembro', 'Rua do Sol', 'Avenida Central'])[1 + floor(random() * 10)::int]
-           || ', ' || (1 + floor(random() * 2000)::int)
-           || ' - CP ' || lpad(floor(random() * 100000000)::bigint::text, 8, '0'),
-       ddi
-FROM residencia
-ORDER BY i;
+-- nro_usuario: número da conta na plataforma, único por plataforma
+-- (DEC-025), em ordem aleatória dentro da plataforma.
+CREATE TEMP TABLE tmp_rank_conta ON COMMIT DROP AS
+SELECT p.nro AS nro_plataforma, c.id_usuario,
+       row_number() OVER (PARTITION BY c.ord ORDER BY random()) AS rk
+FROM tmp_conta c
+JOIN tmp_plat p ON p.ord = c.ord;
+CREATE UNIQUE INDEX ON tmp_rank_conta (nro_plataforma, rk);
+ANALYZE tmp_rank_conta;
+
+CREATE TEMP TABLE tmp_qtd_conta ON COMMIT DROP AS
+SELECT nro_plataforma, count(*) AS n FROM tmp_rank_conta GROUP BY nro_plataforma;
+ANALYZE tmp_qtd_conta;
+
+INSERT INTO steam_do_bedo.PlataformaUsuario (nro_plataforma, id_usuario, nro_usuario)
+SELECT nro_plataforma, id_usuario, 10000000 + rk * 37 + (id_usuario % 37)
+FROM tmp_rank_conta
+ORDER BY nro_plataforma, id_usuario;
 
 -- ---------------------------------------------------------------------
--- PlataformaUsuario: cada usuário tem conta em 2 plataformas = 8000
---   uma das 10 reais (distribuição uniforme) e uma das 990 fictícias
---   nro_usuario é sequencial dentro de cada plataforma
+-- StreamerPais: 5% dos usuários são streamers (no seed v2 eram 25%).
+-- Passaporte do país de residência em 92% dos casos; 4% têm um segundo
+-- passaporte (EUA, ou Brasil para quem já é dos EUA).
+-- Número do passaporte: 2 letras + número do usuário, único no país.
 -- ---------------------------------------------------------------------
-WITH usuarios AS (
-    SELECT nick, row_number() OVER (ORDER BY nick) - 1 AS n
-    FROM steam_do_bedo.Usuario
-),
-plataformas AS (
-    SELECT nro, row_number() OVER (ORDER BY nro) AS r
-    FROM steam_do_bedo.Plataforma
-)
-INSERT INTO steam_do_bedo.PlataformaUsuario (nro_plataforma, nick_usuario, nro_usuario)
-SELECT p.nro, u.nick, row_number() OVER (PARTITION BY p.nro ORDER BY u.nick)
-FROM usuarios u
-JOIN plataformas p ON p.r = 1 + u.n % 10
-                   OR p.r = 11 + u.n % 990;
+CREATE TEMP TABLE tmp_streamer ON COMMIT DROP AS
+SELECT u.id_usuario, u.pais_residencia, x.u
+FROM steam_do_bedo.Usuario u
+CROSS JOIN LATERAL (SELECT random() AS u WHERE u.id_usuario > 0) x
+WHERE x.u < 0.05;
+ANALYZE tmp_streamer;
+
+INSERT INTO steam_do_bedo.StreamerPais (id_streamer, ddi_pais, nro_passaporte)
+SELECT id_streamer, ddi, upper(substr(md5(ddi || ':' || id_streamer), 1, 2)) || lpad(id_streamer::text, 9, '0')
+FROM (
+    SELECT s.id_usuario AS id_streamer,
+           CASE WHEN x.r < 0.92 THEN s.pais_residencia ELSE pc.ddi END AS ddi
+    FROM tmp_streamer s
+    CROSS JOIN LATERAL (SELECT random() AS r, random() AS u WHERE s.id_usuario > 0) x
+    CROSS JOIN LATERAL (SELECT c.ddi FROM tmp_pais_cdf c WHERE c.hi > x.u ORDER BY c.hi LIMIT 1) pc
+    UNION
+    SELECT s.id_usuario, CASE WHEN s.pais_residencia = '1' THEN '55' ELSE '1' END
+    FROM tmp_streamer s
+    WHERE s.u < 0.05 * 0.04
+) p
+ORDER BY id_streamer, ddi;
 
 -- ---------------------------------------------------------------------
--- StreamerPais: 1000 usuários sorteados são streamers; passaporte do país
--- de residência + segundo passaporte (Brasil ou Portugal) para ~20%
+-- Canais (preparação). Regras dos triggers obedecidas aqui:
+--   T9  o dono é streamer (sai de tmp_streamer);
+--   T10 o dono tem conta na plataforma do canal (sai de tmp_conta);
+--   T7  canal criado depois da fundação da plataforma e antes do seu fim.
+-- Cada streamer tem canal na sua primeira conta e, com 60%, nas outras.
+-- Nome: derivado do nick (único), então (nome, nro_plataforma) é único.
+-- "pop": popularidade lognormal do canal (sigma 2,2: poucos canais
+-- concentram quase todo o público). Ela comanda as visualizações, o
+-- número de vídeos, os membros e os patrocínios (correlação pedida pelo
+-- professor em 05:20).
 -- ---------------------------------------------------------------------
--- Obs.: um random() no SELECT idêntico ao do ORDER BY é tratado pelo
--- PostgreSQL como o MESMO valor; por isso os demais sorteios ficam numa
--- CTE separada da ordenação (mesmo cuidado em Inscricao e Doacao).
-WITH sorteados AS (
-    SELECT nick, pais_residencia
-    FROM steam_do_bedo.Usuario
-    ORDER BY random()
-    LIMIT 1000
-),
-streamers AS (
-    SELECT nick, pais_residencia, random() < 0.2 AS dupla_cidadania
-    FROM sorteados
-),
-passaportes AS (
-    SELECT nick, pais_residencia AS ddi FROM streamers
-    UNION ALL
-    SELECT nick, CASE WHEN pais_residencia = '55' THEN '351' ELSE '55' END
-    FROM streamers
-    WHERE dupla_cidadania
-)
-INSERT INTO steam_do_bedo.StreamerPais (nick_streamer, ddi_pais, nro_passaporte)
-SELECT nick, ddi,
-       chr(65 + floor(random() * 26)::int)
-       || chr(65 + floor(random() * 26)::int)
-       || lpad(floor(random() * 10000000)::int::text, 7, '0')
-FROM passaportes;
+CREATE TEMP TABLE tmp_canal ON COMMIT DROP AS
+SELECT row_number() OVER (ORDER BY c.id_usuario, c.ord) AS k,
+       c.id_usuario AS id_streamer, p.nro AS nro_plataforma, p.formato, p.limite,
+       initcap(replace(u.nick, '_', ' ')) || ' ' ||
+           (ARRAY['TV','Gaming','Live','Plays','Clips','Oficial','Streams','Games'])[1 + floor(random() * 8)::int] AS nome,
+       (ARRAY['publico','publico','publico','publico','publico','publico','publico','publico','misto','misto','misto','privado'])
+           [1 + floor(random() * 12)::int] AS tipo,
+       -- data entre a fundação e 30 dias antes do limite, mais recente com mais frequência
+       p.data_fund::timestamptz
+         + (p.limite - interval '30 days' - p.data_fund::timestamptz) * power(random(), 0.6) AS data,
+       exp(pg_temp.normal() * 2.2) AS pop,
+       pg_temp.normal() AS z_ativ
+FROM (
+    SELECT c.*, row_number() OVER (PARTITION BY c.id_usuario ORDER BY random()) AS n_conta
+    FROM tmp_conta c
+    JOIN tmp_streamer s ON s.id_usuario = c.id_usuario
+) c
+JOIN tmp_plat p ON p.ord = c.ord
+JOIN steam_do_bedo.Usuario u ON u.id_usuario = c.id_usuario
+WHERE c.n_conta = 1 OR random() < 0.6;
+
+-- Percentil de popularidade (0 = menos popular, 1 = mais popular)
+ALTER TABLE tmp_canal ADD COLUMN pct double precision;
+UPDATE tmp_canal t SET pct = r.pct
+FROM (SELECT k, percent_rank() OVER (ORDER BY pop) AS pct FROM tmp_canal) r
+WHERE r.k = t.k;
+CREATE UNIQUE INDEX ON tmp_canal (k);
+ANALYZE tmp_canal;
 
 -- ---------------------------------------------------------------------
--- Canal: todo streamer tem um canal na sua plataforma real e ~25% têm
--- um segundo canal na sua plataforma fictícia (~1250).
--- qtd_visualizacoes (derivado) é calculado ao final do script
+-- Vídeos (preparação).
+-- Vídeos por canal: lognormal, correlacionada com a popularidade
+-- (canais populares publicam mais). Mediana de 10 vídeos em canal de
+-- vídeo longo e 25 em canal de vídeo curto; teto de 3.000 e 8.000.
+-- Em plataforma mista, 40% dos vídeos são curtos.
+-- Curto: 8 a 60 s; longo: lognormal com mediana de 90 min (lives).
+-- visu_total: pop do canal × fator lognormal do vídeo (curtos têm mais
+-- visualizações por vídeo). visu_simul só existe em live (vídeo longo em
+-- plataforma de live): 1% a 10% do total.
+-- dataH entre a criação do canal e o limite da plataforma (menos 1 dia).
 -- ---------------------------------------------------------------------
-WITH plataformas AS (
-    SELECT nro, row_number() OVER (ORDER BY nro) <= 10 AS real
-    FROM steam_do_bedo.Plataforma
-),
-contas AS (
-    SELECT pu.nick_usuario AS nick, pu.nro_plataforma, p.real,
-           random() AS u_canal, random() AS u_tipo
-    FROM steam_do_bedo.PlataformaUsuario pu
-    JOIN plataformas p ON p.nro = pu.nro_plataforma
-    WHERE pu.nick_usuario IN (SELECT nick_streamer FROM steam_do_bedo.StreamerPais)
-)
-INSERT INTO steam_do_bedo.Canal (nome, nro_plataforma, tipo, data, descricao, nick_streamer)
-SELECT nick || CASE WHEN real
-                    THEN (ARRAY[' TV', ' Gaming', ' Live', ' Plays', ' Oficial'])[1 + floor(random() * 5)::int]
-                    ELSE (ARRAY[' Clips', ' Cortes', ' Highlights', ' VODs'])[1 + floor(random() * 4)::int]
-               END,
-       nro_plataforma,
-       CASE WHEN u_tipo < 0.60 THEN 'publico'
-            WHEN u_tipo < 0.85 THEN 'misto'
-            ELSE 'privado' END,
-       date_trunc('second', TIMESTAMPTZ '2015-01-01 00:00:00+00' + random() * INTERVAL '9 years'),
-       CASE WHEN real
-            THEN 'Canal oficial de ' || nick || ' com lives e gameplays.'
-            ELSE 'Cortes e melhores momentos das lives de ' || nick || '.' END,
-       nick
-FROM contas
-WHERE real OR u_canal < 0.25;
-
--- ---------------------------------------------------------------------
--- NivelCanal: 5 níveis por canal (~6250)
--- Cada canal usa um dos 5 temas de nomes e um multiplicador próprio sobre
--- a tabela base de valores (USD/mês), de modo que o valor cresce com o nível
--- ---------------------------------------------------------------------
-WITH canais AS (
-    SELECT nome, nro_plataforma,
-           1 + floor(random() * 5)::int AS tema,
-           (0.5 + random())::numeric    AS multiplicador
-    FROM steam_do_bedo.Canal
-)
-INSERT INTO steam_do_bedo.NivelCanal (nome_canal, nro_plataforma, nivel, valor, gif)
-SELECT c.nome,
-       c.nro_plataforma,
-       (ARRAY[
-           ['Bronze',  'Prata',    'Ouro',     'Platina',  'Diamante'],
-           ['Recruta', 'Soldado',  'Sargento', 'Capitão',  'General'],
-           ['Fã',      'Apoiador', 'Parceiro', 'VIP',      'Lenda'],
-           ['Bit',     'Byte',     'Kilobyte', 'Megabyte', 'Gigabyte'],
-           ['Novato',  'Aprendiz', 'Veterano', 'Mestre',   'Lendário']
-       ])[c.tema][k],
-       round((ARRAY[1.99, 4.99, 9.99, 24.99, 49.99])[k] * c.multiplicador, 2),
-       'gifs/' || regexp_replace(lower(c.nome), '[^a-z0-9]+', '_', 'g') || '_nivel' || k || '.gif'
-FROM canais c
-CROSS JOIN generate_series(1, 5) AS k;
-
--- ---------------------------------------------------------------------
--- Inscricao (~8500): cada usuário é membro de 2 canais sorteados da sua
--- plataforma real e, com 50% de chance, de 1 canal da sua plataforma
--- fictícia. Só se inscreve onde tem conta e nunca no próprio canal.
--- Níveis mais baratos são mais frequentes.
--- ---------------------------------------------------------------------
-WITH plataformas AS (
-    SELECT nro, row_number() OVER (ORDER BY nro) <= 10 AS real
-    FROM steam_do_bedo.Plataforma
-),
-niveis AS (
-    SELECT nome_canal, nro_plataforma, nivel,
-           row_number() OVER (PARTITION BY nome_canal, nro_plataforma ORDER BY valor) AS ordem
-    FROM steam_do_bedo.NivelCanal
-),
-pares AS (
-    SELECT pu.nick_usuario, c.nome, c.nro_plataforma, p.real,
-           random() AS u_ordem,
-           random() AS u_inscreve,
-           random() AS u_nivel
-    FROM steam_do_bedo.PlataformaUsuario pu
-    JOIN plataformas p ON p.nro = pu.nro_plataforma
-    JOIN steam_do_bedo.Canal c ON c.nro_plataforma = pu.nro_plataforma
-                               AND c.nick_streamer <> pu.nick_usuario
-),
-candidatos AS (
-    SELECT pares.*,
-           row_number() OVER (PARTITION BY nick_usuario, nro_plataforma ORDER BY u_ordem) AS sorteio
-    FROM pares
-)
-INSERT INTO steam_do_bedo.Inscricao (nome_canal, nro_plataforma, nick_membro, nivel)
-SELECT ca.nome, ca.nro_plataforma, ca.nick_usuario, n.nivel
-FROM candidatos ca
-JOIN niveis n ON n.nome_canal = ca.nome
-             AND n.nro_plataforma = ca.nro_plataforma
-             AND n.ordem = 1 + floor(5 * ca.u_nivel ^ 2)::int
-WHERE (ca.real AND ca.sorteio <= 2)
-   OR (NOT ca.real AND ca.sorteio = 1 AND ca.u_inscreve < 0.5);
-
--- ---------------------------------------------------------------------
--- Video: 3 a 6 vídeos por canal (~5600); 70% seguem o tema do canal.
--- Visualizações com distribuição bem assimétrica (poucos vídeos virais).
--- ---------------------------------------------------------------------
-WITH temas AS (
-    SELECT ARRAY['Minecraft', 'Fortnite', 'League of Legends', 'Valorant', 'Counter-Strike 2',
-                 'GTA V', 'Elden Ring', 'Free Fire', 'Roblox', 'Dota 2', 'Apex Legends',
-                 'Call of Duty', 'EA Sports FC', 'Hollow Knight', 'Stardew Valley',
-                 'The Sims 4', 'Rocket League', 'Pokémon', 'Just Chatting', 'Speedrun'] AS lista
-),
-canais AS (
-    SELECT c.nome, c.nro_plataforma, c.data,
-           t.lista[1 + floor(random() * 20)::int] AS tema_canal,
-           3 + floor(random() * 4)::int            AS qtd_videos
-    FROM steam_do_bedo.Canal c
-    CROSS JOIN temas t
-),
-videos AS (
-    SELECT c.nome, c.nro_plataforma, k,
-           CASE WHEN random() < 0.7 THEN c.tema_canal
-                ELSE t.lista[1 + floor(random() * 20)::int] END                AS tema,
-           date_trunc('second', c.data + k * INTERVAL '20 days'
-                                       + random() * INTERVAL '19 days')        AS dataH,
-           (50 + floor(1500000 * random() ^ 4))::bigint                        AS visu_total
-    FROM canais c
-    CROSS JOIN temas t
-    CROSS JOIN LATERAL generate_series(1, c.qtd_videos) AS k
-)
-INSERT INTO steam_do_bedo.Video (nome_canal, nro_plataforma, titulo, dataH, tema, duracao, visu_simul, visu_total)
-SELECT nome,
-       nro_plataforma,
-       tema || ' - '
-           || (ARRAY['Gameplay ao vivo', 'Rumo ao topo do ranking', 'Desafio sem morrer',
-                     'Jogando com inscritos', 'Primeira vez jogando', 'Tentando zerar em uma live',
-                     'Testando a nova atualização', 'Campeonato da comunidade', 'Melhores momentos',
-                     'Tutorial para iniciantes', 'Maratona de 12 horas', 'Reagindo aos clipes',
-                     'Build definitiva', 'Modo hardcore', 'Live de sexta'])[1 + floor(random() * 15)::int]
-           || ' #' || k,
-       dataH,
-       tema,
-       (10 + floor(random() * 350)::int) * INTERVAL '1 minute',
-       greatest(1, floor(visu_total * (0.02 + 0.25 * random())))::bigint,
-       visu_total
-FROM videos;
-
--- ---------------------------------------------------------------------
--- Participa: 0 a 2 streamers convidados por vídeo (~5000).
--- O dono do canal não é repetido aqui (já é derivável de Canal) e os
--- convidados precisam ter conta na plataforma do vídeo.
--- ---------------------------------------------------------------------
-WITH videos AS (
-    SELECT v.nome_canal, v.nro_plataforma, v.titulo, v.dataH,
-           c.nick_streamer          AS dono,
-           floor(random() * 3)::int AS qtd_convidados
-    FROM steam_do_bedo.Video v
-    JOIN steam_do_bedo.Canal c ON c.nome = v.nome_canal AND c.nro_plataforma = v.nro_plataforma
-),
-candidatos AS (
-    SELECT v.nome_canal, v.nro_plataforma, v.titulo, v.dataH, v.qtd_convidados,
-           pu.nick_usuario,
-           row_number() OVER (PARTITION BY v.nome_canal, v.nro_plataforma, v.titulo, v.dataH
-                              ORDER BY random()) AS sorteio
-    FROM videos v
-    JOIN steam_do_bedo.PlataformaUsuario pu ON pu.nro_plataforma = v.nro_plataforma
-                                            AND pu.nick_usuario <> v.dono
-    WHERE pu.nick_usuario IN (SELECT nick_streamer FROM steam_do_bedo.StreamerPais)
-)
-INSERT INTO steam_do_bedo.Participa (nome_canal, nro_plataforma, titulo_video, dataH_video, nick_streamer)
-SELECT nome_canal, nro_plataforma, titulo, dataH, nick_usuario
-FROM candidatos
-WHERE sorteio <= qtd_convidados;
-
--- ---------------------------------------------------------------------
--- Comentario: 9000, concentrados nos vídeos mais vistos.
--- O autor tem conta na plataforma do vídeo; ~65% são online (durante o
--- vídeo) e ~35% offline (até 60 dias depois). seq é sequencial por vídeo,
--- em ordem cronológica.
--- ---------------------------------------------------------------------
-WITH videos AS (
-    SELECT v.*, row_number() OVER (ORDER BY v.visu_total DESC, v.nome_canal, v.titulo) - 1 AS idx
-    FROM steam_do_bedo.Video v
-),
-contas AS (
-    SELECT nro_plataforma, nick_usuario,
-           row_number() OVER (PARTITION BY nro_plataforma ORDER BY nick_usuario) AS r,
-           count(*)     OVER (PARTITION BY nro_plataforma)                       AS n
-    FROM steam_do_bedo.PlataformaUsuario
-),
-sorteio AS (
-    -- random()^2 favorece os primeiros índices, isto é, os vídeos mais vistos
-    SELECT i,
-           floor(random() ^ 2 * (SELECT count(*) FROM steam_do_bedo.Video))::bigint AS idx_video,
-           random()        AS u_autor,
-           random() < 0.65 AS online,
-           random()        AS u_tempo
-    FROM generate_series(1, 9000) AS i
-),
-comentarios AS (
-    SELECT v.nome_canal, v.nro_plataforma, v.titulo, v.dataH AS dataH_video,
-           ct.nick_usuario, s.i, s.online,
-           date_trunc('second',
-               CASE WHEN s.online THEN v.dataH + v.duracao * s.u_tempo
-                    ELSE v.dataH + v.duracao + INTERVAL '60 days' * s.u_tempo END) AS dataH
-    FROM sorteio s
-    JOIN videos v  ON v.idx = s.idx_video
-    JOIN contas ct ON ct.nro_plataforma = v.nro_plataforma
-                  AND ct.r = 1 + floor(s.u_autor * ct.n)
-)
-INSERT INTO steam_do_bedo.Comentario (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                       nick_usuario, seq, texto, dataH, coment_on)
-SELECT nome_canal, nro_plataforma, titulo, dataH_video, nick_usuario,
-       row_number() OVER (PARTITION BY nome_canal, nro_plataforma, titulo, dataH_video
-                          ORDER BY dataH, i),
-       (ARRAY['Que jogada incrível!', 'Primeiro!', 'Manda salve pro Rio!', 'Essa build é muito boa',
-              'Kkkkkk morri de rir', 'Qual a configuração do seu PC?', 'Joga com os inscritos!',
-              'Live top demais', 'Faltou pouco!', 'Esse boss é muito difícil', 'Vim pelo clipe',
-              'Ótimo conteúdo, parabéns', 'Quando sai o próximo vídeo?', 'GG WP',
-              'Explica essa estratégia de novo?', 'Assistindo do Japão', 'Que susto kkkk',
-              'Melhor streamer do Brasil', 'Volta a jogar aquele jogo antigo',
-              'Esse momento foi histórico'])[1 + floor(random() * 20)::int],
-       dataH,
-       online
-FROM comentarios;
-
--- ---------------------------------------------------------------------
--- Doacao: 5000 comentários sorteados trazem uma doação.
--- A relação comentário-doação é 1:1, então seq_pg é sempre 1.
--- Status: ~10% recusado, ~45% recebido, ~45% lido
--- ---------------------------------------------------------------------
-WITH sorteados AS (
-    SELECT c.*
-    FROM steam_do_bedo.Comentario c
-    ORDER BY random()
-    LIMIT 5000
-),
-doacoes AS (
-    SELECT s.*, random() AS u_status
-    FROM sorteados s
-)
-INSERT INTO steam_do_bedo.Doacao (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                   nick_usuario, seq_comentario, seq_pg, valor, status)
-SELECT nome_canal, nro_plataforma, titulo_video, dataH_video, nick_usuario, seq, 1,
-       round((1 + 499 * random() ^ 3)::numeric, 2),
-       CASE WHEN u_status < 0.10 THEN 'recusado'
-            WHEN u_status < 0.55 THEN 'recebido'
-            ELSE 'lido' END
-FROM doacoes;
-
--- ---------------------------------------------------------------------
--- Especializações de Doacao (disjuntas), 1250 em cada.
--- As doações são numeradas pela chave e o resto da divisão por 4 define
--- a forma de pagamento: 0 BitCoin, 1 PayPal, 2 Cartão, 3 Mecanismo da plataforma
--- ---------------------------------------------------------------------
-WITH doacoes AS (
-    SELECT d.*,
-           row_number() OVER (ORDER BY nome_canal, nro_plataforma, titulo_video,
-                                       dataH_video, nick_usuario, seq_comentario) % 4 AS forma
-    FROM steam_do_bedo.Doacao d
-)
-INSERT INTO steam_do_bedo.BitCoin (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                    nick_usuario, seq_comentario, seq_doacao, TxID)
-SELECT nome_canal, nro_plataforma, titulo_video, dataH_video, nick_usuario, seq_comentario, seq_pg,
-       md5(random()::text) || md5(random()::text)  -- hash de 64 caracteres hexadecimais
-FROM doacoes
-WHERE forma = 0;
-
-WITH doacoes AS (
-    SELECT d.*,
-           row_number() OVER (ORDER BY nome_canal, nro_plataforma, titulo_video,
-                                       dataH_video, nick_usuario, seq_comentario) % 4 AS forma
-    FROM steam_do_bedo.Doacao d
-)
-INSERT INTO steam_do_bedo.PayPal (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                   nick_usuario, seq_comentario, seq_doacao, IdPayPal)
-SELECT nome_canal, nro_plataforma, titulo_video, dataH_video, nick_usuario, seq_comentario, seq_pg,
-       'PAYID-' || upper(substr(md5(random()::text), 1, 24))
-FROM doacoes
-WHERE forma = 1;
-
--- Números de cartão fictícios de 16 dígitos com o prefixo da bandeira
-WITH doacoes AS (
-    SELECT d.*,
-           row_number() OVER (ORDER BY nome_canal, nro_plataforma, titulo_video,
-                                       dataH_video, nick_usuario, seq_comentario) % 4 AS forma,
-           1 + floor(random() * 4)::int AS b
-    FROM steam_do_bedo.Doacao d
-),
-cartoes AS (
-    SELECT d.*,
-           (ARRAY['Visa', 'Mastercard', 'Elo', 'Hipercard'])[b] AS bandeira,
-           (ARRAY['4', '5', '6362', '6062'])[b]                 AS prefixo
-    FROM doacoes d
-    WHERE forma = 2
-)
-INSERT INTO steam_do_bedo.CartaoCredito (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                          nick_usuario, seq_comentario, seq_doacao, nro, bandeira)
-SELECT nome_canal, nro_plataforma, titulo_video, dataH_video, nick_usuario, seq_comentario, seq_pg,
-       prefixo || lpad(floor(random() * 10 ^ (16 - length(prefixo)))::bigint::text,
-                       16 - length(prefixo), '0'),
-       bandeira
-FROM cartoes;
-
--- seq_plataforma é sequencial por (usuário, plataforma), em ordem cronológica
-WITH doacoes AS (
-    SELECT d.*,
-           row_number() OVER (ORDER BY nome_canal, nro_plataforma, titulo_video,
-                                       dataH_video, nick_usuario, seq_comentario) % 4 AS forma
-    FROM steam_do_bedo.Doacao d
-)
-INSERT INTO steam_do_bedo.MecanismoPlat (nome_canal, nro_plataforma, titulo_video, dataH_video,
-                                          nick_usuario, seq_comentario, seq_doacao, seq_plataforma)
-SELECT nome_canal, nro_plataforma, titulo_video, dataH_video, nick_usuario, seq_comentario, seq_pg,
-       row_number() OVER (PARTITION BY nick_usuario, nro_plataforma
-                          ORDER BY dataH_video, nome_canal, titulo_video, seq_comentario)
-FROM doacoes
-WHERE forma = 3;
-
--- ---------------------------------------------------------------------
--- Patrocinio (somente vigentes): 0 a 3 empresas distintas por canal (~1750)
--- Valor em USD
--- ---------------------------------------------------------------------
-WITH canais AS (
-    SELECT nome, nro_plataforma,
-           (ARRAY[0, 1, 1, 2, 3])[1 + floor(random() * 5)::int] AS qtd_patrocinadores
-    FROM steam_do_bedo.Canal
-)
-INSERT INTO steam_do_bedo.Patrocinio (nro_empresa, nome_canal, nro_plataforma, valor)
-SELECT e.nro, c.nome, c.nro_plataforma, round((200 + 49800 * random() ^ 3)::numeric, 2)
-FROM canais c
+CREATE TEMP TABLE tmp_video ON COMMIT DROP AS
+SELECT v.k_canal, v.n_video, v.curto, v.dataH, v.duracao, v.tema,
+       v.visu_total,
+       CASE WHEN NOT v.curto AND v.formato = 'longo'
+            THEN floor(v.visu_total * (0.01 + 0.09 * random()))::bigint END AS visu_simul
+FROM (
+    SELECT c.k AS k_canal, g.n AS n_video, c.formato,
+           (c.formato = 'curto' OR (c.formato = 'misto' AND random() < 0.4)) AS curto,
+           c.data + (c.limite - interval '1 day' - c.data) * random() AS dataH,
+           (ARRAY['Minecraft','Fortnite','League of Legends','Valorant','Counter-Strike 2','GTA V',
+                  'Free Fire','Roblox','Dota 2','Apex Legends','Call of Duty','EA FC','Genshin Impact',
+                  'PUBG','Elden Ring','Rocket League','Overwatch 2','Just Chatting','Speedrun',
+                  'Retrô'])[1 + floor(power(random(), 1.8) * 20)::int] AS tema,
+           c.pop, g.n AS dummy
+    FROM tmp_canal c
+    CROSS JOIN LATERAL (
+        SELECT least(CASE WHEN c.formato = 'curto' THEN 8000 ELSE 3000 END,
+                     greatest(1, round(exp(ln(CASE WHEN c.formato = 'curto' THEN 25 ELSE 10 END)
+                                           + 1.2 * (0.5 * ln(c.pop) / 2.2 + 0.87 * c.z_ativ)))))::int AS n
+    ) q
+    CROSS JOIN LATERAL generate_series(1, q.n) AS g(n)
+) v0
 CROSS JOIN LATERAL (
-    SELECT nro
-    FROM steam_do_bedo.Empresa
-    ORDER BY random()
-    LIMIT c.qtd_patrocinadores
-) AS e;
+    SELECT v0.k_canal, v0.n_video, v0.formato, v0.curto, v0.dataH, v0.tema,
+           CASE WHEN v0.curto THEN make_interval(secs => 8 + floor(random() * 53))
+                ELSE make_interval(mins => least(720, greatest(6, round(exp(ln(90) + 0.7 * pg_temp.normal()))))::int)
+           END AS duracao,
+           greatest(0, floor(v0.pop * CASE WHEN v0.curto THEN 400 ELSE 120 END
+                                    * exp(1.1 * pg_temp.normal())))::bigint AS visu_total
+) v;
+CREATE INDEX ON tmp_video (k_canal);
+ANALYZE tmp_video;
+
+-- Canal: qtd_visualizacoes = soma de visu_total dos seus vídeos, calculada
+-- no INSERT (derivado; DEC-027).
+INSERT INTO steam_do_bedo.Canal (nome, nro_plataforma, tipo, data, descricao, qtd_visualizacoes, id_streamer)
+SELECT c.nome, c.nro_plataforma, c.tipo, c.data,
+       'Canal de ' || c.nome || ': ' ||
+           (ARRAY['lives diárias','gameplay sem cortes','dicas e tutoriais','cortes engraçados',
+                  'competitivo','speedruns','jogos indie','bate-papo e jogos'])[1 + floor(random() * 8)::int],
+       coalesce(sv.soma, 0),
+       c.id_streamer
+FROM tmp_canal c
+LEFT JOIN (SELECT k_canal, sum(visu_total) AS soma FROM tmp_video GROUP BY k_canal) sv ON sv.k_canal = c.k
+ORDER BY c.k;
+
+-- Mapa k -> id_canal pela chave natural (nome, nro_plataforma)
+ALTER TABLE tmp_canal ADD COLUMN id_canal bigint;
+UPDATE tmp_canal t SET id_canal = c.id_canal
+FROM steam_do_bedo.Canal c
+WHERE c.nome = t.nome AND c.nro_plataforma = t.nro_plataforma;
+
+-- Video: id_video UUID v7 derivado do instante de postagem (DEC-021) e de
+-- uma semente única (canal + número do vídeo). Inserido em ordem de
+-- id_video, como chegaria um coletor em tempo real: a PK cresce pelo fim.
+-- Título com "#n" garante o UNIQUE (id_canal, titulo, dataH).
+CREATE TEMP TABLE tmp_video_id ON COMMIT DROP AS
+SELECT pg_temp.uuid_v7_det(v.dataH, c.k || '/' || v.n_video) AS id_video,
+       c.id_canal, c.k AS k_canal, c.nro_plataforma, c.formato, c.limite, c.id_streamer, c.pop,
+       v.n_video, v.curto, v.dataH, v.duracao, v.tema, v.visu_total, v.visu_simul
+FROM tmp_video v
+JOIN tmp_canal c ON c.k = v.k_canal;
+ANALYZE tmp_video_id;
+
+INSERT INTO steam_do_bedo.Video (id_video, id_canal, titulo, dataH, tema, duracao, visu_simul, visu_total)
+SELECT id_video, id_canal,
+       CASE WHEN curto THEN (ARRAY['Clipe','Jogada','Fail','Highlight','Momento'])[1 + floor(random() * 5)::int]
+            ELSE (ARRAY['Live','Gameplay','Rankeada','Campeonato','Tutorial','Zerando'])[1 + floor(random() * 6)::int]
+       END || ' de ' || tema || ' #' || n_video,
+       dataH, tema, duracao, visu_simul, visu_total
+FROM tmp_video_id
+ORDER BY id_video;
+ANALYZE steam_do_bedo.video, steam_do_bedo.canal;
 
 -- ---------------------------------------------------------------------
--- Atributos derivados
+-- Participa: convidados em 20% dos vídeos longos, 1 a 3 cada.
+-- Só streamers (T9), nunca o próprio dono. Convidados sorteados entre os
+-- streamers com lei de potência (alguns aparecem em muitas lives).
 -- ---------------------------------------------------------------------
-UPDATE steam_do_bedo.Plataforma p
-SET qtd_users = (SELECT count(*)
-                 FROM steam_do_bedo.PlataformaUsuario pu
-                 WHERE pu.nro_plataforma = p.nro);
+CREATE TEMP TABLE tmp_streamer_rk ON COMMIT DROP AS
+SELECT row_number() OVER (ORDER BY random()) AS rk, id_usuario FROM tmp_streamer;
+CREATE UNIQUE INDEX ON tmp_streamer_rk (rk);
+ANALYZE tmp_streamer_rk;
 
-UPDATE steam_do_bedo.Canal c
-SET qtd_visualizacoes = COALESCE((SELECT sum(v.visu_total)
-                                  FROM steam_do_bedo.Video v
-                                  WHERE v.nome_canal = c.nome
-                                    AND v.nro_plataforma = c.nro_plataforma), 0);
+INSERT INTO steam_do_bedo.Participa (id_video, id_streamer)
+SELECT DISTINCT v.id_video, s.id_usuario
+FROM tmp_video_id v
+-- a referência a v.n_video torna o sorteio da quantidade correlacionado
+-- (sem ela, generate_series seria avaliado uma vez só para todos os vídeos)
+CROSS JOIN LATERAL generate_series(1, CASE WHEN v.n_video > 0 THEN 1 + floor(power(random(), 2) * 3)::int END) AS g
+CROSS JOIN LATERAL (SELECT pg_temp.potencia((SELECT count(*) FROM tmp_streamer_rk), 1.5) AS rk WHERE g > 0) x
+JOIN tmp_streamer_rk s ON s.rk = x.rk
+WHERE NOT v.curto
+  AND v.n_video % 5 = 0          -- 1 em cada 5 vídeos longos (determinístico e barato)
+  AND s.id_usuario <> v.id_streamer
+ORDER BY v.id_video, s.id_usuario;
+
+-- ---------------------------------------------------------------------
+-- NivelCanal: 5 níveis (T8: nunca mais de 5) em ~55% dos canais; quanto
+-- mais popular, mais chance de ter membros (30% + 50% × percentil).
+-- Valor mensal na moeda do país do membro (DEC-001), em degraus típicos.
+-- ---------------------------------------------------------------------
+CREATE TEMP TABLE tmp_canal_membros ON COMMIT DROP AS
+SELECT c.k, c.id_canal, c.nro_plataforma, c.id_streamer, c.pop,
+       (ARRAY['metal','fa','tier','numero'])[1 + floor(random() * 4)::int] AS estilo,
+       (ARRAY[1, 1, 1.5, 2, 3])[1 + floor(random() * 5)::int] AS mult
+FROM tmp_canal c
+WHERE random() < 0.30 + 0.50 * c.pct;
+ANALYZE tmp_canal_membros;
+
+INSERT INTO steam_do_bedo.NivelCanal (id_canal, nivel, valor, gif)
+SELECT m.id_canal,
+       CASE m.estilo
+           WHEN 'metal'  THEN (ARRAY['Bronze','Prata','Ouro','Platina','Diamante'])[n]
+           WHEN 'fa'     THEN (ARRAY['Fã','Apoiador','VIP','Elite','Lenda'])[n]
+           WHEN 'tier'   THEN 'Tier ' || n
+           ELSE 'Nível ' || n
+       END,
+       (ARRAY[4.99, 9.99, 24.99, 49.99, 99.99])[n] * m.mult,
+       'https://cdn.stream-do-bedo.example/gif/' || m.id_canal || '/nivel' || n || '.gif'
+FROM tmp_canal_membros m
+CROSS JOIN generate_series(1, 5) AS n
+ORDER BY m.id_canal, n;
+ANALYZE steam_do_bedo.nivelcanal;
+
+-- ---------------------------------------------------------------------
+-- Inscricao: 600 mil × escala, distribuídas entre os canais com níveis
+-- proporcionalmente a pop^0,7 (cauda longa). O membro sai das contas da
+-- plataforma do canal, com lei de potência (usuários ativos assinam
+-- mais), nunca o dono. Nível: 1 (60%), 2 (22%), 3 (10%), 4 (5%), 5 (3%).
+-- Duplicatas (mesmo usuário sorteado duas vezes no canal) somem no
+-- DISTINCT ON, então o total fica um pouco abaixo do alvo.
+-- ---------------------------------------------------------------------
+INSERT INTO steam_do_bedo.Inscricao (id_canal, id_membro, nivel)
+SELECT DISTINCT ON (m.id_canal, rc.id_usuario)
+       m.id_canal, rc.id_usuario, nv.nivel
+FROM (
+    SELECT m.*, floor((SELECT n_inscricoes FROM seed_param) * power(m.pop, 0.7)
+                      / sum(power(m.pop, 0.7)) OVER () + random())::int AS n_membros
+    FROM tmp_canal_membros m
+) m
+JOIN tmp_qtd_conta qc ON qc.nro_plataforma = m.nro_plataforma
+CROSS JOIN LATERAL generate_series(1, m.n_membros) AS g
+CROSS JOIN LATERAL (SELECT pg_temp.potencia(qc.n, 1.3) AS rk, random() AS u WHERE g > 0) x
+-- busca da conta sorteada pela chave única de tmp_rank_conta: LATERAL força
+-- um acesso pelo índice por linha, qualquer que seja a estimativa do
+-- planejador (com JOIN comum, uma estimativa ruim já travou a carga)
+CROSS JOIN LATERAL (SELECT r.id_usuario FROM tmp_rank_conta r
+                    WHERE r.nro_plataforma = m.nro_plataforma AND r.rk = x.rk) rc
+CROSS JOIN LATERAL (
+    SELECT n.nivel FROM steam_do_bedo.NivelCanal n
+    WHERE n.id_canal = m.id_canal
+    ORDER BY n.valor
+    OFFSET (CASE WHEN x.u < 0.60 THEN 0 WHEN x.u < 0.82 THEN 1 WHEN x.u < 0.92 THEN 2
+                 WHEN x.u < 0.97 THEN 3 ELSE 4 END)
+    LIMIT 1
+) nv
+WHERE rc.id_usuario <> m.id_streamer
+ORDER BY m.id_canal, rc.id_usuario;
+
+-- ---------------------------------------------------------------------
+-- Patrocinio: chance de patrocínio 3% + 90% × percentil^4 (quase só os
+-- canais do topo). Canais do topo têm vários patrocinadores. Marca
+-- sorteada por lei de potência sobre o peso (as grandes patrocinam mais).
+-- Valor em USD (DEC-026), proporcional à popularidade, arredondado a 100.
+-- ---------------------------------------------------------------------
+INSERT INTO steam_do_bedo.Patrocinio (nro_empresa, id_canal, valor)
+SELECT DISTINCT ON (pt.nro, c.id_canal)
+       pt.nro, c.id_canal,
+       greatest(500, round(least(5000000, 300 * power(c.pop, 0.6) * exp(0.6 * pg_temp.normal())) / 100) * 100)
+FROM tmp_canal c
+CROSS JOIN LATERAL generate_series(1, 1 + floor(-ln(1 - random()) * 2.5 * c.pct)::int) AS g
+CROSS JOIN LATERAL (SELECT pg_temp.potencia((SELECT count(*) FROM tmp_patrocinador), 2.5) AS rk WHERE g > 0) x
+JOIN tmp_patrocinador pt ON pt.rk = x.rk
+WHERE random() < 0.03 + 0.90 * power(c.pct, 4)
+ORDER BY pt.nro, c.id_canal;
+
+-- ---------------------------------------------------------------------
+-- Comentario: 5 mi × escala, distribuídos entre os vídeos em proporção a
+-- visu_total^0,85 com ruído (cauda longa: um vídeo viral tem dezenas de
+-- milhares de comentários, a maioria tem poucos ou nenhum). Vídeo curto
+-- recebe 30% do peso por visualização.
+-- Online (feito durante a live): 85% em plataforma de live, 50% em vídeo
+-- longo de plataforma mista e 0% em vídeo curto.
+-- seq contínuo por vídeo (1..n) e em ordem cronológica: os online vêm
+-- primeiro, espalhados pela duração da live; os offline depois, ao longo
+-- de até 60 dias, sem passar do limite da plataforma (T3 e T7).
+-- Autor: conta da plataforma do vídeo, por lei de potência (poucos
+-- usuários comentam muito). Inserido em ordem de (id_video, seq), a ordem
+-- da PK.
+-- ---------------------------------------------------------------------
+CREATE TEMP TABLE tmp_video_coment ON COMMIT DROP AS
+WITH pesos AS (
+    SELECT v.id_video, v.nro_plataforma, v.dataH, v.duracao, v.limite, v.curto, v.formato,
+           power(v.visu_total + 1, 0.85) * exp(0.8 * pg_temp.normal())
+               * CASE WHEN v.curto THEN 0.3 ELSE 1 END AS peso
+    FROM tmp_video_id v
+)
+SELECT id_video, nro_plataforma, dataH, duracao, limite, n_c,
+       floor(n_c * CASE WHEN curto THEN 0 WHEN formato = 'longo' THEN 0.85 ELSE 0.5 END)::int AS n_on
+FROM (
+    SELECT p.*, floor((SELECT n_comentarios FROM seed_param) * p.peso / sum(p.peso) OVER () + random())::int AS n_c
+    FROM pesos p
+) x
+WHERE n_c > 0;
+ANALYZE tmp_video_coment;
+
+INSERT INTO steam_do_bedo.Comentario (id_video, seq, id_usuario, texto, dataH, coment_on)
+SELECT v.id_video, g.seq, rc.id_usuario,
+       (ARRAY['kkkkkk','GG','que jogada!','primeiro!','manda salve','F no chat','bora!!',
+              'esse jogo é muito bom','alguém mais assistindo em 2026?','top demais','clutch',
+              'pog','que lag é esse','ensina aí','melhor live','vai dar certo','nerfa isso',
+              'saudades dessa época','lindo demais','salve do Brasil'])[1 + floor(random() * 20)::int],
+       CASE WHEN g.seq <= v.n_on
+            THEN v.dataH + v.duracao * (g.seq::double precision / (v.n_on + 1))
+            ELSE v.dataH + v.duracao
+                 + least(interval '60 days', greatest(interval '0', v.limite - v.dataH - v.duracao))
+                   * ((g.seq - v.n_on)::double precision / (v.n_c - v.n_on + 1))
+       END,
+       g.seq <= v.n_on
+FROM (SELECT * FROM tmp_video_coment ORDER BY id_video) v
+JOIN tmp_qtd_conta qc ON qc.nro_plataforma = v.nro_plataforma
+CROSS JOIN LATERAL generate_series(1, v.n_c) AS g(seq)
+CROSS JOIN LATERAL (SELECT pg_temp.potencia(qc.n, 2.5) AS rk WHERE g.seq > 0) x
+-- mesma busca pela chave única (ver Inscricao): plano estável em 5 mi de linhas
+CROSS JOIN LATERAL (SELECT r.id_usuario FROM tmp_rank_conta r
+                    WHERE r.nro_plataforma = v.nro_plataforma AND r.rk = x.rk) rc;
+ANALYZE steam_do_bedo.comentario;
+
+-- ---------------------------------------------------------------------
+-- Doacao: 5% dos comentários online e 1% dos offline (~2% no total;
+-- no mundo real, de 1% a 5%). 5% dos comentários com doação têm uma
+-- segunda doação (seq_pg 2): seq_pg contínuo por comentário (T4).
+-- Forma de pagamento: online favorece o mecanismo da plataforma
+-- (Super Chat): 55% mecanismo, 20% cartão, 17% PayPal, 8% BitCoin;
+-- offline: 30%, 30%, 28% e 12%.
+-- Valor: sorteado em USD (lognormal, mediana por forma: mecanismo 4,
+-- cartão 10, PayPal 12, BitCoin 40), convertido para a moeda do país de
+-- residência do autor (o valor que ele digitaria) e de volta para USD com
+-- 2 casas, exatamente como o trigger T11 faria (DEC-026). Mínimo 0,01.
+-- Status: lido 70%, recebido 20%, recusado 10% (sorteio em 10 posições).
+-- ---------------------------------------------------------------------
+CREATE TEMP TABLE tmp_doacao ON COMMIT DROP AS
+SELECT c.id_video, c.seq AS seq_comentario, g.seq_pg, c.id_usuario, ca.nro_plataforma, c.dataH,
+       f.forma, cv.fator_conver,
+       greatest(0.01, round(round(usd.base::numeric / cv.fator_conver, 2) * cv.fator_conver, 2)) AS valor,
+       (ARRAY['lido','lido','lido','lido','lido','lido','lido','recebido','recebido','recusado'])
+           [1 + floor(least(0.9999, s.u * 1.0) * 10)::int] AS status
+FROM steam_do_bedo.Comentario c
+CROSS JOIN LATERAL (SELECT random() AS u WHERE c.seq > 0) sel
+JOIN steam_do_bedo.Video v       ON v.id_video = c.id_video
+JOIN steam_do_bedo.Canal ca      ON ca.id_canal = v.id_canal
+JOIN steam_do_bedo.Usuario us    ON us.id_usuario = c.id_usuario
+JOIN steam_do_bedo.Pais pa       ON pa.ddi = us.pais_residencia
+JOIN steam_do_bedo.Conversao cv  ON cv.moeda = pa.moeda
+-- c.seq na condição torna o sorteio correlacionado (um por comentário)
+CROSS JOIN LATERAL generate_series(1, CASE WHEN random() < 0.05 AND c.seq > 0 THEN 2 ELSE 1 END) AS g(seq_pg)
+CROSS JOIN LATERAL (SELECT random() AS r, random() AS u WHERE g.seq_pg > 0) s
+CROSS JOIN LATERAL (
+    SELECT CASE WHEN c.coment_on THEN
+                    CASE WHEN s.r < 0.55 THEN 'mecanismoplat' WHEN s.r < 0.75 THEN 'cartaocredito'
+                         WHEN s.r < 0.92 THEN 'paypal' ELSE 'bitcoin' END
+                ELSE
+                    CASE WHEN s.r < 0.30 THEN 'mecanismoplat' WHEN s.r < 0.60 THEN 'cartaocredito'
+                         WHEN s.r < 0.88 THEN 'paypal' ELSE 'bitcoin' END
+           END AS forma
+) f
+CROSS JOIN LATERAL (
+    SELECT least(2000, exp(ln(CASE f.forma WHEN 'mecanismoplat' THEN 4 WHEN 'cartaocredito' THEN 10
+                                          WHEN 'paypal' THEN 12 ELSE 40 END)
+                           + 1.0 * pg_temp.normal())) AS base
+) usd
+WHERE sel.u < CASE WHEN c.coment_on THEN 0.05 ELSE 0.01 END;
+ANALYZE tmp_doacao;
+
+INSERT INTO steam_do_bedo.Doacao (id_video, seq_comentario, seq_pg, valor, status)
+SELECT id_video, seq_comentario, seq_pg, valor, status
+FROM tmp_doacao
+ORDER BY id_video, seq_comentario, seq_pg;
+
+-- Especializações: cada doação entra em exatamente uma forma (T6).
+-- TxID e IdPayPal derivam da chave da doação (únicos, DEC-025).
+INSERT INTO steam_do_bedo.BitCoin (id_video, seq_comentario, seq_doacao, TxID)
+SELECT id_video, seq_comentario, seq_pg,
+       md5('btc:' || id_video || ':' || seq_comentario || ':' || seq_pg)
+       || md5('tx:' || id_video || ':' || seq_comentario || ':' || seq_pg)
+FROM tmp_doacao WHERE forma = 'bitcoin'
+ORDER BY id_video, seq_comentario, seq_pg;
+
+INSERT INTO steam_do_bedo.PayPal (id_video, seq_comentario, seq_doacao, IdPayPal)
+SELECT id_video, seq_comentario, seq_pg,
+       'PAYID-' || upper(substr(md5('pp:' || id_video || ':' || seq_comentario || ':' || seq_pg), 1, 24))
+FROM tmp_doacao WHERE forma = 'paypal'
+ORDER BY id_video, seq_comentario, seq_pg;
+
+-- Número de cartão fictício (prefixo da bandeira + dígitos), não um
+-- cartão real; ver o cuidado sobre PCI no ddl.sql.
+INSERT INTO steam_do_bedo.CartaoCredito (id_video, seq_comentario, seq_doacao, nro, bandeira)
+SELECT id_video, seq_comentario, seq_pg,
+       b.prefixo || lpad((abs(hashtext(id_video::text || seq_comentario || seq_pg)) % 1000000000000000)::text, 15, '0'),
+       b.bandeira
+FROM tmp_doacao
+CROSS JOIN LATERAL (
+    SELECT (ARRAY['Visa','Visa','Visa','Mastercard','Mastercard','Elo','American Express','Hipercard'])[i] AS bandeira,
+           (ARRAY['4','4','4','5','5','6','3','6'])[i] AS prefixo
+    FROM (SELECT 1 + floor(random() * 8)::int AS i WHERE seq_pg > 0) z
+) b
+WHERE forma = 'cartaocredito'
+ORDER BY id_video, seq_comentario, seq_pg;
+
+-- seq_plataforma contínuo por (usuário, plataforma), em ordem
+-- cronológica das doações (T5). O autor sempre tem conta na plataforma,
+-- porque os comentários saem das contas da plataforma do vídeo.
+INSERT INTO steam_do_bedo.MecanismoPlat (id_video, seq_comentario, seq_doacao, seq_plataforma)
+SELECT id_video, seq_comentario, seq_pg,
+       row_number() OVER (PARTITION BY id_usuario, nro_plataforma
+                          ORDER BY dataH, id_video, seq_comentario, seq_pg)
+FROM tmp_doacao
+WHERE forma = 'mecanismoplat'
+ORDER BY id_video, seq_comentario, seq_pg;
+
+-- ---------------------------------------------------------------------
+-- Conferência de sanidade (substitui a checagem de 1.000 a 10.000 do v2).
+-- Cada regra que os triggers vão impor dali em diante é conferida sobre a
+-- carga inteira. Qualquer falha aborta a transação: nada fica gravado.
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v_falhas text[] := '{}';
+    v_qtd    bigint;
+    v_pct    numeric;
+BEGIN
+    -- volumes mínimos (as tabelas que dependem de sorteio têm dados)
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.bitcoin)       THEN v_falhas := v_falhas || 'BitCoin vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.paypal)        THEN v_falhas := v_falhas || 'PayPal vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.cartaocredito) THEN v_falhas := v_falhas || 'CartaoCredito vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.mecanismoplat) THEN v_falhas := v_falhas || 'MecanismoPlat vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.participa)     THEN v_falhas := v_falhas || 'Participa vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.patrocinio)    THEN v_falhas := v_falhas || 'Patrocinio vazia'::text; END IF;
+    IF NOT EXISTS (SELECT 1 FROM steam_do_bedo.inscricao)     THEN v_falhas := v_falhas || 'Inscricao vazia'::text; END IF;
+
+    -- derivados (T1 e T2)
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.canal c
+    WHERE c.qtd_visualizacoes <> (SELECT coalesce(sum(v.visu_total), 0) FROM steam_do_bedo.video v WHERE v.id_canal = c.id_canal);
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais com qtd_visualizacoes errada', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.plataforma p
+    WHERE p.qtd_users <> (SELECT count(*) FROM steam_do_bedo.plataformausuario pu WHERE pu.nro_plataforma = p.nro);
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s plataformas com qtd_users errada', v_qtd); END IF;
+
+    -- seq contínuo (T3, T4, T5)
+    SELECT count(*) INTO v_qtd FROM (
+        SELECT id_video FROM steam_do_bedo.comentario GROUP BY id_video HAVING max(seq) <> count(*)) x;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s vídeos com seq de comentário com buraco', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM (
+        SELECT 1 FROM steam_do_bedo.doacao GROUP BY id_video, seq_comentario HAVING max(seq_pg) <> count(*)) x;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s comentários com seq_pg com buraco', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM (
+        SELECT 1 FROM steam_do_bedo.mecanismoplat m
+        JOIN steam_do_bedo.comentario c ON c.id_video = m.id_video AND c.seq = m.seq_comentario
+        JOIN steam_do_bedo.video v ON v.id_video = m.id_video
+        JOIN steam_do_bedo.canal ca ON ca.id_canal = v.id_canal
+        GROUP BY c.id_usuario, ca.nro_plataforma
+        HAVING max(m.seq_plataforma) <> count(*) OR count(DISTINCT m.seq_plataforma) <> count(*)) x;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s pares (usuário, plataforma) com seq_plataforma com buraco', v_qtd); END IF;
+
+    -- especialização disjunta e total (T6)
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.doacao d
+    WHERE (SELECT count(*) FROM (
+              SELECT 1 FROM steam_do_bedo.bitcoin b WHERE (b.id_video, b.seq_comentario, b.seq_doacao) = (d.id_video, d.seq_comentario, d.seq_pg)
+              UNION ALL SELECT 1 FROM steam_do_bedo.paypal b WHERE (b.id_video, b.seq_comentario, b.seq_doacao) = (d.id_video, d.seq_comentario, d.seq_pg)
+              UNION ALL SELECT 1 FROM steam_do_bedo.cartaocredito b WHERE (b.id_video, b.seq_comentario, b.seq_doacao) = (d.id_video, d.seq_comentario, d.seq_pg)
+              UNION ALL SELECT 1 FROM steam_do_bedo.mecanismoplat b WHERE (b.id_video, b.seq_comentario, b.seq_doacao) = (d.id_video, d.seq_comentario, d.seq_pg)
+          ) f) <> 1;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s doações sem forma ou com mais de uma', v_qtd); END IF;
+
+    -- datas (T7), inclusive o limite das plataformas encerradas
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.comentario c JOIN steam_do_bedo.video v USING (id_video)
+    WHERE c.dataH < v.dataH;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s comentários antes do vídeo', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.video v JOIN steam_do_bedo.canal c USING (id_canal)
+    WHERE v.dataH < c.data;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s vídeos antes do canal', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.canal c JOIN steam_do_bedo.plataforma p ON p.nro = c.nro_plataforma
+    WHERE (c.data AT TIME ZONE 'UTC')::date < p.data_fund;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais antes da plataforma', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.comentario c
+    JOIN steam_do_bedo.video v USING (id_video) JOIN steam_do_bedo.canal ca USING (id_canal)
+    JOIN tmp_plat p ON p.nro = ca.nro_plataforma
+    WHERE p.fim IS NOT NULL AND c.dataH > p.fim;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s comentários depois do fim da plataforma', v_qtd); END IF;
+
+    -- níveis (T8)
+    SELECT count(*) INTO v_qtd FROM (
+        SELECT 1 FROM steam_do_bedo.nivelcanal GROUP BY id_canal HAVING count(*) > 5) x;
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais com mais de 5 níveis', v_qtd); END IF;
+
+    -- streamer (T9) e conta (T10)
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.canal c
+    WHERE NOT EXISTS (SELECT 1 FROM steam_do_bedo.streamerpais s WHERE s.id_streamer = c.id_streamer);
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais de quem não é streamer', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.participa pa
+    WHERE NOT EXISTS (SELECT 1 FROM steam_do_bedo.streamerpais s WHERE s.id_streamer = pa.id_streamer);
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s participações de quem não é streamer', v_qtd); END IF;
+    SELECT count(*) INTO v_qtd FROM steam_do_bedo.canal c
+    WHERE NOT EXISTS (SELECT 1 FROM steam_do_bedo.plataformausuario pu
+                      WHERE pu.nro_plataforma = c.nro_plataforma AND pu.id_usuario = c.id_streamer);
+    IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais sem conta do dono na plataforma', v_qtd); END IF;
+
+    -- proporção de comentários com doação (DEC-031: 1% a 5%)
+    SELECT 100.0 * (SELECT count(DISTINCT (id_video, seq_comentario)) FROM steam_do_bedo.doacao)
+                 / nullif((SELECT count(*) FROM steam_do_bedo.comentario), 0)
+    INTO v_pct;
+    IF v_pct IS NULL OR v_pct NOT BETWEEN 1 AND 5 THEN
+        v_falhas := v_falhas || format('%s%% dos comentários com doação (esperado 1%% a 5%%)', round(v_pct, 2));
+    END IF;
+
+    IF cardinality(v_falhas) > 0 THEN
+        RAISE EXCEPTION 'seed abortado na conferência: %', array_to_string(v_falhas, '; ');
+    END IF;
+    RAISE NOTICE 'seed: conferência de sanidade OK (% dos comentários com doação)', round(v_pct, 2) || '%';
+END
+$$;
 
 COMMIT;
 
--- ---------------------------------------------------------------------
--- Conferência do item mandatório 1: tuplas por tabela
--- ---------------------------------------------------------------------
-SELECT tabela, tuplas, tuplas BETWEEN 1000 AND 10000 AS dentro_do_intervalo
+\timing off
+
+-- Estatísticas e visibility map atualizados para as consultas e os
+-- índices. Fora da transação, por exigência do VACUUM.
+VACUUM (ANALYZE) steam_do_bedo.conversao, steam_do_bedo.pais, steam_do_bedo.empresa,
+    steam_do_bedo.empresapais, steam_do_bedo.plataforma, steam_do_bedo.usuario,
+    steam_do_bedo.plataformausuario, steam_do_bedo.streamerpais, steam_do_bedo.canal,
+    steam_do_bedo.nivelcanal, steam_do_bedo.inscricao, steam_do_bedo.patrocinio,
+    steam_do_bedo.video, steam_do_bedo.participa, steam_do_bedo.comentario,
+    steam_do_bedo.doacao, steam_do_bedo.bitcoin, steam_do_bedo.paypal,
+    steam_do_bedo.cartaocredito, steam_do_bedo.mecanismoplat;
+
+-- Volume final por tabela (evidência para o decisions.md)
+SELECT t.tabela, t.tuplas
 FROM (
-    SELECT 'Conversao' AS tabela, count(*) AS tuplas FROM steam_do_bedo.Conversao
-    UNION ALL SELECT 'Pais',              count(*) FROM steam_do_bedo.Pais
-    UNION ALL SELECT 'Empresa',           count(*) FROM steam_do_bedo.Empresa
-    UNION ALL SELECT 'EmpresaPais',       count(*) FROM steam_do_bedo.EmpresaPais
-    UNION ALL SELECT 'Plataforma',        count(*) FROM steam_do_bedo.Plataforma
-    UNION ALL SELECT 'Usuario',           count(*) FROM steam_do_bedo.Usuario
-    UNION ALL SELECT 'PlataformaUsuario', count(*) FROM steam_do_bedo.PlataformaUsuario
-    UNION ALL SELECT 'StreamerPais',      count(*) FROM steam_do_bedo.StreamerPais
-    UNION ALL SELECT 'Canal',             count(*) FROM steam_do_bedo.Canal
-    UNION ALL SELECT 'NivelCanal',        count(*) FROM steam_do_bedo.NivelCanal
-    UNION ALL SELECT 'Inscricao',         count(*) FROM steam_do_bedo.Inscricao
-    UNION ALL SELECT 'Patrocinio',        count(*) FROM steam_do_bedo.Patrocinio
-    UNION ALL SELECT 'Video',             count(*) FROM steam_do_bedo.Video
-    UNION ALL SELECT 'Participa',         count(*) FROM steam_do_bedo.Participa
-    UNION ALL SELECT 'Comentario',        count(*) FROM steam_do_bedo.Comentario
-    UNION ALL SELECT 'Doacao',            count(*) FROM steam_do_bedo.Doacao
-    UNION ALL SELECT 'BitCoin',           count(*) FROM steam_do_bedo.BitCoin
-    UNION ALL SELECT 'PayPal',            count(*) FROM steam_do_bedo.PayPal
-    UNION ALL SELECT 'CartaoCredito',     count(*) FROM steam_do_bedo.CartaoCredito
-    UNION ALL SELECT 'MecanismoPlat',     count(*) FROM steam_do_bedo.MecanismoPlat
-) AS contagem;
+              SELECT 1 AS o, 'Conversao' AS tabela, count(*) AS tuplas FROM steam_do_bedo.conversao
+    UNION ALL SELECT 2, 'Pais', count(*) FROM steam_do_bedo.pais
+    UNION ALL SELECT 3, 'Empresa', count(*) FROM steam_do_bedo.empresa
+    UNION ALL SELECT 4, 'EmpresaPais', count(*) FROM steam_do_bedo.empresapais
+    UNION ALL SELECT 5, 'Plataforma', count(*) FROM steam_do_bedo.plataforma
+    UNION ALL SELECT 6, 'Usuario', count(*) FROM steam_do_bedo.usuario
+    UNION ALL SELECT 7, 'PlataformaUsuario', count(*) FROM steam_do_bedo.plataformausuario
+    UNION ALL SELECT 8, 'StreamerPais', count(*) FROM steam_do_bedo.streamerpais
+    UNION ALL SELECT 9, 'Canal', count(*) FROM steam_do_bedo.canal
+    UNION ALL SELECT 10, 'NivelCanal', count(*) FROM steam_do_bedo.nivelcanal
+    UNION ALL SELECT 11, 'Inscricao', count(*) FROM steam_do_bedo.inscricao
+    UNION ALL SELECT 12, 'Patrocinio', count(*) FROM steam_do_bedo.patrocinio
+    UNION ALL SELECT 13, 'Video', count(*) FROM steam_do_bedo.video
+    UNION ALL SELECT 14, 'Participa', count(*) FROM steam_do_bedo.participa
+    UNION ALL SELECT 15, 'Comentario', count(*) FROM steam_do_bedo.comentario
+    UNION ALL SELECT 16, 'Doacao', count(*) FROM steam_do_bedo.doacao
+    UNION ALL SELECT 17, 'BitCoin', count(*) FROM steam_do_bedo.bitcoin
+    UNION ALL SELECT 18, 'PayPal', count(*) FROM steam_do_bedo.paypal
+    UNION ALL SELECT 19, 'CartaoCredito', count(*) FROM steam_do_bedo.cartaocredito
+    UNION ALL SELECT 20, 'MecanismoPlat', count(*) FROM steam_do_bedo.mecanismoplat
+) t
+ORDER BY t.o;

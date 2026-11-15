@@ -1,13 +1,13 @@
 -- =====================================================================
 -- Projeto de Banco de Dados 2026/2 - Stream do Bedo
--- Arquivo 3/7: views virtuais e materializadas (item mandatório 3)
+-- Arquivo 3/6: views virtuais e materializadas (item mandatório 3)
 -- PostgreSQL 17
 --
 -- O que faz: cria 2 views virtuais (V1, V2), 2 materializadas (V3, V4),
 -- os índices UNIQUE das materializadas e a procedure de refresh.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed_v3.sql -> views.sql ->
--- procedures.sql -> triggers.sql -> indices.sql -> queries.sql.
+-- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- functions.sql -> triggers.sql -> tests.sql.
 -- Vem depois da carga porque as views materializadas são preenchidas na
 -- criação; e antes das procedures, que as usam.
 --
@@ -23,10 +23,10 @@
 --     imediata, mas o dado fica parado até o REFRESH. Serve para agregações
 --     caras sobre tabelas grandes, quando um atraso é aceitável.
 --
--- Teto de índices (P09, DEC-028): o grupo decidiu que o índice de view
+-- Teto de índices (DEC-028): o grupo decidiu que o índice de view
 -- materializada CONTA no teto de 5 índices de apoio do item 4. Os dois
 -- índices UNIQUE abaixo (exigidos pelo REFRESH ... CONCURRENTLY) somam 2
--- dos 5; sobram 3 para as tabelas base (indices.sql, DEC-034).
+-- dos 5; sobram 3 para as tabelas base (parte 2 do functions.sql, DEC-034).
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -109,7 +109,7 @@ COMMENT ON VIEW steam_do_bedo.vw_inscricao_usd IS
 -- Índice: UNIQUE (id_canal, id_video). É obrigatório para o REFRESH ...
 --   CONCURRENTLY (que não bloqueia leituras) e, por ter id_canal na
 --   frente, também atende "vídeos de um canal" (item 2 com filtro) e
---   "soma por canal" (item 3 com filtro). Conta no teto de 5 (P09).
+--   "soma por canal" (item 3 com filtro). Conta no teto de 5.
 -- Refresh: periódico (por exemplo, de hora em hora por um agendador
 --   externo, como cron ou pg_cron) com CALL sp_refresh_views(). Não é
 --   disparado por trigger: refazer a contagem a cada comentário custaria
@@ -142,7 +142,7 @@ COMMENT ON MATERIALIZED VIEW steam_do_bedo.mv_interacoes_video IS
 --   (professor, 14:50); para isso, um atraso de horas é aceitável.
 -- DEC-028; usa V1 e V2, então herda as regras de status e de moeda.
 -- Índice: UNIQUE (id_canal), exigido pelo REFRESH CONCURRENTLY. Conta no
---   teto de 5 (P09). O top-k em si ordena ~30 mil linhas (uma por canal
+--   teto de 5. O top-k em si ordena ~30 mil linhas (uma por canal
 --   com receita), o que custa milissegundos sem índice próprio.
 -- Refresh: periódico, junto com a V3 (sp_refresh_views).
 -- Cuidado: cada fonte é agregada por canal antes de ser combinada; um JOIN
@@ -193,7 +193,7 @@ COMMENT ON MATERIALIZED VIEW steam_do_bedo.mv_faturamento_canal IS
 --   lendo a view (por isso o índice UNIQUE).
 -- Cuidado: CONCURRENTLY é mais lento que o refresh comum (compara as
 --   duas versões) e não funciona numa view nunca preenchida. O custo foi
---   medido no bench (DEC-034, overhead de escrita).
+--   medido no benchmark.md (DEC-034, overhead de escrita).
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE steam_do_bedo.sp_refresh_views()
 LANGUAGE plpgsql AS $$

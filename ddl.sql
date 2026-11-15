@@ -1,6 +1,6 @@
 -- =====================================================================
 -- Projeto de Banco de Dados 2026/2 - Stream do Bedo
--- Arquivo 1/7: DDL (PostgreSQL 17)
+-- Arquivo 1/6: DDL (PostgreSQL 17)
 --
 -- O que faz: cria o schema steam_do_bedo com as 20 tabelas do modelo
 -- relacional do enunciado, com as chaves remodeladas e as constraints
@@ -8,15 +8,15 @@
 -- DEFAULT da chave de Video.
 --
 -- Ordem de execução (DEC-030). Cada arquivo depende dos anteriores:
---   1. ddl.sql            <- este arquivo (recria o schema do zero)
---   2. seed_v3.sql        carga; obedece às regras dos triggers sozinho
---   3. views.sql          views virtuais e materializadas (V1 a V4)
---   4. procedures.sql     functions das 12 consultas
---   5. triggers.sql       triggers T1 a T11 (depois da carga, para não
---                         pesar nem travar a inserção em lote)
---   6. indices.sql        até 5 índices de apoio (depois da carga)
---   7. queries.sql        chamadas das functions
---   (testes_triggers.sql roda depois do 5 e desfaz tudo com ROLLBACK)
+--   1. ddl.sql         <- este arquivo (recria o schema do zero)
+--   2. seed.sql        carga; obedece às regras dos triggers sozinho
+--   3. views.sql       views virtuais e materializadas (V1 a V4)
+--   4. functions.sql   functions das 12 consultas e, na parte 2, os
+--                      índices de apoio (criados depois da carga)
+--   5. triggers.sql    triggers T1 a T11 (depois da carga, para não
+--                      pesar nem travar a inserção em lote)
+--   6. tests.sql       chamadas das functions e, na parte 2, os testes
+--                      dos triggers (desfeitos com ROLLBACK)
 --
 -- Regra de alteração do modelo (DEC-019, fala do professor em 00:15):
 -- o modelo relacional do enunciado não muda de relações. Pode: remodelar
@@ -525,7 +525,7 @@ CREATE TABLE steam_do_bedo.MecanismoPlat (
 );
 
 -- ---------------------------------------------------------------------
--- Índices de apoio: ficam em indices.sql, executado depois da carga
+-- Índices de apoio: ficam na parte 2 do functions.sql, executado depois da carga
 -- (DEC-030 e DEC-034, que substitui a DEC-018). Aqui só existem os
 -- índices criados automaticamente pelas PRIMARY KEY e UNIQUE.
 -- ---------------------------------------------------------------------

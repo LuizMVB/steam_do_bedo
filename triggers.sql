@@ -1,16 +1,16 @@
 -- =====================================================================
 -- Projeto de Banco de Dados 2026/2 - Stream do Bedo
--- Arquivo 5/7: triggers (item mandatório 5) - PostgreSQL 17
+-- Arquivo 5/6: triggers (item mandatório 5) - PostgreSQL 17
 --
 -- O que faz: cria as functions de trigger e os triggers T1 a T11, que
 -- mantêm a consistência exigida pelo minimundo e que não cabe em
 -- PRIMARY KEY, UNIQUE, FOREIGN KEY ou CHECK (DEC-027).
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed_v3.sql -> views.sql ->
--- procedures.sql -> triggers.sql -> indices.sql -> queries.sql.
+-- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- functions.sql -> triggers.sql -> tests.sql.
 -- Este arquivo roda DEPOIS da carga, como o professor orientou (11:30:
 -- "vou colocar as triggers separadas para não ter problema na hora de
--- fazer inserção"). Por isso o seed_v3.sql obedece às mesmas regras e
+-- fazer inserção"). Por isso o seed.sql obedece às mesmas regras e
 -- calcula sozinho os atributos derivados (qtd_users, qtd_visualizacoes).
 -- Rodar este arquivo sobre uma carga que viola alguma regra não dá erro:
 -- os triggers só valem para as escritas seguintes.
@@ -59,7 +59,7 @@ SET search_path TO steam_do_bedo;
 --     dois comandos concorrentes que mexem nos mesmos canais travam as
 --     linhas na mesma ordem e não entram em deadlock.
 --   * Soma via delta: se alguém desligar o trigger e alterar Video, o
---     derivado fica errado. A conferência está no testes_triggers.sql.
+--     derivado fica errado. A conferência está no tests.sql (parte 2).
 -- =====================================================================
 CREATE OR REPLACE FUNCTION steam_do_bedo.fn_t01_video_qtd_visualizacoes()
 RETURNS trigger
