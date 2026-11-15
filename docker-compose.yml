@@ -1,0 +1,40 @@
+# =====================================================================
+# Projeto de Banco de Dados 2026/2 - Stream do Bedo
+# Banco PostgreSQL 17 para executar o trabalho (ver README.md).
+#
+# O que sobe: um único container, "steam-do-bedo-db", com o banco
+# "steam-do-bedo-db" e o usuário "admin". A pasta do projeto é montada
+# em /workspace (somente leitura), para o psql de dentro do container
+# executar os arquivos .sql sem copiar nada.
+#
+# Uso normal: make setup (sobe o banco e executa tudo na ordem).
+# =====================================================================
+
+services:
+  db:
+    image: postgres:17
+    container_name: steam-do-bedo-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      # Senha só para acesso por cliente externo (porta 5432). Os comandos
+      # do Makefile rodam dentro do container e não precisam dela.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-steam-do-bedo-db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Volume próprio: os dados sobrevivem a "make down"; "make clean" apaga.
+      - steam_do_bedo_data:/var/lib/postgresql/data
+      # Arquivos .sql do projeto, lidos pelo psql dentro do container.
+      - ./:/workspace:ro
+    # A carga cria tabelas temporárias grandes e ordena milhões de linhas;
+    # o padrão do Docker (64 MB de memória compartilhada) é pouco.
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  steam_do_bedo_data:

@@ -8,24 +8,8 @@ Os comentários do código citam as decisões por número (`-- DEC-NNN`). Cada
 seção abaixo diz quais números ela cobre. O registro completo, decisão por
 decisão, com todas as medições, está na tag `v1.1.0` do repositório.
 
-## Como executar
-
-Cada arquivo depende dos anteriores (DEC-030):
-
-```
-ddl.sql -> seed.sql -> views.sql -> functions.sql -> triggers.sql -> tests.sql
-```
-
-- **Triggers depois da carga:** foi a orientação do professor, para a inserção
-  em lote não travar. Por isso o seed obedece às mesmas regras dos triggers e
-  calcula sozinho os atributos derivados.
-- **Views antes das functions:** as functions leem as views, e as views
-  materializadas precisam dos dados para serem preenchidas.
-- **Índices de apoio depois da carga:** ficam na parte 2 do `functions.sql`,
-  porque criar o índice sobre a tabela pronta é mais rápido que mantê-lo linha a
-  linha durante a carga.
-- **Escala menor para teste rápido:** `psql -v escala=0.1 -f seed.sql` termina
-  em menos de 1 minuto. A escala 1 leva de 6 a 9 minutos.
+A forma de executar e a ordem dos arquivos (DEC-030) estão no
+[README.md](README.md).
 
 ## 1. Regra do trabalho e cenário (DEC-019, DEC-020)
 
