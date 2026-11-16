@@ -1,14 +1,14 @@
 -- =====================================================================
--- bench/estatisticas.sql · distribuição das colunas dos predicados
+-- estatisticas.sql · distribuição das colunas dos predicados
 --
 -- O que faz: para cada coluna que aparece num WHERE, JOIN ou GROUP BY das
 -- functions, mostra o que o planejador sabe (pg_stats: n_distinct, valor
 -- mais comum e sua frequência, correlação física) e a fração da tabela que
 -- o filtro usado na aferição devolve. É a base do inventário em
--- bench/predicados.md e da escolha dos índices.
+-- predicados.md e da escolha dos índices.
 --
 -- Ordem: depois da carga e do VACUUM ANALYZE (o seed.sql já faz).
--- Saída da última execução: bench/estatisticas.txt.
+-- Saída da última execução: bench/estatisticas.txt, na tag v2.1.0.
 -- Metodologia do professor (07:03-08:00): se o filtro devolve uma fração
 -- grande da tabela, o índice não ajuda; olhar a distribuição antes.
 -- =====================================================================

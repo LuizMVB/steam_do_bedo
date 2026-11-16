@@ -492,7 +492,7 @@ $$;
 -- pg_stats -> tipo do índice pelo tipo do predicado -> medida a frio com
 -- e sem o índice e do overhead de inserção. Os números estão no
 -- benchmark.md e no decisoes_detalhamento.md; o EXPLAIN ANALYZE de cada
--- medida está em bench/planos/.
+-- medida está em bench/planos/, na tag v2.1.0.
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -523,8 +523,8 @@ DROP INDEX IF EXISTS steam_do_bedo.idx_video_id_canal_cobertura;
 --   8,4 MB no lote de 300 mil). Neste lote inseriu mais rápido (+27%
 --   contra +63%), mas em Canal foi mais lento, e as rodadas variam muito.
 --   Fica o B-tree, que lê o mesmo, ocupa menos e também entrega em ordem.
--- Planos: bench/planos/base/i06_com__final__sem_apoio__frio.txt e
---   bench/planos/final/i06_com__final__final__frio.txt (benchmark.md).
+-- Planos (tag v2.1.0): bench/planos/base/i06_com__final__sem_apoio__frio.txt
+--   e bench/planos/final/i06_com__final__final__frio.txt (benchmark.md).
 -- Cuidado: inscrição é escrita rara (o usuário assina um canal de vez em
 --   quando) e a busca por usuário é leitura frequente.
 -- ---------------------------------------------------------------------

@@ -133,5 +133,6 @@ números de desempenho estão em `benchmark.md`.
 ## Medição [D 13]
 
 - **Tudo medido a frio:** reinício do Postgres e `drop_caches` antes de cada
-  medida, 5 repetições, mediana, `EXPLAIN ANALYZE` salvo em `bench/planos/`. O
+  medida, 5 repetições, mediana, `EXPLAIN ANALYZE` de cada número no
+  `benchmark.md`. O
   cache esconde o custo: item 2 filtrado leva 631 ms a frio e 11 ms a quente.

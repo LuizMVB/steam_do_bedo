@@ -1,8 +1,0 @@
-Servidor de aferição (as sessões de medida fixam jit=off e max_parallel_workers_per_gather=0)
-version / shared_buffers / work_mem / effective_cache_size / random_page_cost:
-PostgreSQL 17.12 (Debian 17.12-1.pgdg13+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-128MB
-4MB
-4GB
-4
-tamanho do banco stream_bench: 1497 MB

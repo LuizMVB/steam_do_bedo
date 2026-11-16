@@ -1222,7 +1222,7 @@ uniformes, chegou a conclusões sobre índices que não se sustentaram a frio
 tempo de planejamento e o de execução são registrados separados, e os gráficos
 usam o de execução. Os tempos absolutos dependem do disco da máquina. O script, os
 resultados brutos e o `EXPLAIN ANALYZE` de cada medida estão na pasta
-[`bench/`](bench/); o resultado consolidado está no [benchmark.md](benchmark.md),
+[`bench/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench) da tag `v2.1.0`; o resultado consolidado está no [benchmark.md](benchmark.md),
 com cada número ligado ao plano de onde saiu.
 
 ## 14. Ordem de execução e entrega
