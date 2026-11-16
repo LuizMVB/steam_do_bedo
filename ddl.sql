@@ -260,9 +260,6 @@ CREATE TABLE steam_do_bedo.NivelCanal (
 -- Inscricao ("se inscreve" no ER)
 -- O quê: membro vigente de um canal, num nível. Sem histórico (DELETE
 --   quando a inscrição acaba).
--- a coluna data_inscricao foi removida. Era coluna
---   comum fora de chave, o que a regra do professor não permite, e o
---   minimundo já diz que só os membros vigentes ficam no sistema.
 -- O membro é referenciado por id_membro (id_usuario).
 -- ---------------------------------------------------------------------
 CREATE TABLE steam_do_bedo.Inscricao (
@@ -341,13 +338,14 @@ CREATE TABLE steam_do_bedo.Participa (
 -- seq INTEGER (o cenário prevê no máximo ~10^7 comentários num
 --   vídeo, abaixo de 2,1 × 10^9). Se o INSERT não informar seq, o trigger
 --   T3 gera max(seq) + 1 do vídeo.
--- Cuidado: seq é NOT NULL por ser PK, mas o NOT NULL só é verificado
---   depois dos triggers BEFORE, então um INSERT sem seq funciona quando
---   o T3 existe. Sem o triggers.sql, seq é obrigatório (caso do seed).
+-- Cuidado: seq é NOT NULL (declarado na coluna, além de vir da PK), mas o
+--   NOT NULL só é verificado depois dos triggers BEFORE, então um INSERT
+--   sem seq funciona quando o T3 existe. Sem o triggers.sql, seq é
+--   obrigatório (caso do seed).
 -- ---------------------------------------------------------------------
 CREATE TABLE steam_do_bedo.Comentario (
-    id_video UUID,
-    seq INTEGER,
+    id_video UUID NOT NULL,
+    seq INTEGER NOT NULL,
     id_usuario BIGINT NOT NULL,
 
     texto TEXT,

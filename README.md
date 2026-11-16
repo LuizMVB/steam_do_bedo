@@ -14,6 +14,21 @@ As decisões de projeto estão resumidas em [decisoes_resumo.md](decisoes_resumo
 e explicadas uma a uma em [decisoes_detalhamento.md](decisoes_detalhamento.md);
 as medições de desempenho, em [benchmark.md](benchmark.md).
 
+## Entregáveis
+
+Os 5 arquivos pedidos no Classroom e onde cada um está no projeto:
+
+| # | Entregável pedido | Arquivo(s) do projeto | O que contém |
+|---|---|---|---|
+| 1 | DDL de construção das tabelas | [`ddl.sql`](ddl.sql) | Schema `steam_do_bedo` com as 20 tabelas, chaves artificiais e constraints `UNIQUE`, `NOT NULL` e `CHECK` |
+| 2 | PL/pgSQL: functions, triggers, views e outros | [`views.sql`](views.sql) | 2 views virtuais, 2 materializadas e a procedure `sp_refresh_views` |
+| | | [`functions.sql`](functions.sql) | Functions das 12 consultas e, no fim do arquivo, os índices de apoio |
+| | | [`triggers.sql`](triggers.sql) | Triggers T1 a T11, em arquivo separado para rodar depois da carga |
+| 3 | Dados para inserção | [`seed.sql`](seed.sql) | Gera cerca de 8,7 milhões de registros com semente fixa; o arquivo é pequeno, então não precisa de link do Drive |
+| 4 | Chamadas das consultas e functions para teste | [`tests.sql`](tests.sql) | Chama cada function em vários cenários: sem filtro, com filtro e top-k com k diferentes |
+| 5 | PDF curto com as decisões de projeto e justificativas | [`decisoes_resumo.pdf`](decisoes_resumo.pdf) | Versão em PDF do [`decisoes_resumo.md`](decisoes_resumo.md) |
+| | | [`decisoes_detalhamento.md`](decisoes_detalhamento.md), [`benchmark.md`](benchmark.md) | Complemento: cada decisão por extenso e as medições de desempenho (não fazem parte do PDF) |
+
 ## Requisitos
 
 - **Docker** com Compose v2 (Docker Desktop no Mac ou no Windows).
@@ -195,7 +210,7 @@ Em outro PostgreSQL 17, sem Docker, a ordem é a mesma, com
 | `functions.sql` | Functions das 12 consultas e os índices de apoio |
 | `triggers.sql` | Triggers T1 a T11 |
 | `tests.sql` | Chamadas das functions em vários cenários |
-| `decisoes_resumo.md` | Resumo das decisões de projeto e justificativas |
+| `decisoes_resumo.md`, `decisoes_resumo.pdf` | Resumo das decisões de projeto e justificativas (o PDF é o entregável 5) |
 | `decisoes_detalhamento.md` | Cada decisão por extenso: exigência, alternativas, medições e limitações |
 | `benchmark.md`, `imagens/` | Comparações de desempenho e gráficos |
 | `docker-compose.yml`, `Makefile` | Ambiente e atalhos de execução |

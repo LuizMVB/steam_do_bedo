@@ -5,8 +5,8 @@ Trabalho final de Projeto de Banco de Dados (UFF, 2026/2), em PostgreSQL 17.
 Este documento explica, uma a uma, as decisões tomadas pelo grupo: o que foi
 decidido, qual exigência do trabalho a decisão atende, por que essa opção foi a
 escolhida, quais alternativas foram avaliadas e quais limitações ficaram. O
-[resumo das decisões](decisoes_resumo.md) traz a mesma informação em tabelas
-curtas; as seções dos dois arquivos seguem a mesma numeração a partir da seção 3.
+[resumo das decisões](decisoes_resumo.md) (também em PDF) traz as principais
+decisões em duas páginas, com a marca [D x.y] apontando a seção deste documento.
 
 As medições de desempenho completas estão em [benchmark.md](benchmark.md). As
 fontes dos dados do mundo real estão no fim deste arquivo.
@@ -212,7 +212,10 @@ Detalhes que a tabela não mostra:
   sintética. `Empresa` só é referenciada por tabelas pequenas (`Plataforma`,
   `EmpresaPais`, `Patrocinio`).
 - **Usuário.** O `BIGINT` só deixaria de atender acima de ~9 × 10^8 contas por
-  habitante do planeta. E não custa espaço em `Comentario`: ocupa os bytes que o
+  habitante do planeta. Mesmo no pior caso, com o pico populacional de
+  1,03 × 10^10 pessoas, cada uma com conta em 60 plataformas e 10 gerações de
+  contas apagadas (o id nunca é reaproveitado), seriam 6,2 × 10^12 ids, cerca de
+  7 × 10^-7 do limite. E não custa espaço em `Comentario`: ocupa os bytes que o
   alinhamento de `dataH` já desperdiçava (seção 5.1).
 - **Canal.** Os 4 bytes a mais por linha são pagos em `NivelCanal`, `Inscricao`,
   `Patrocinio` e `Video`. `Comentario` e `Doacao` não têm `id_canal` (chegam ao
@@ -230,8 +233,10 @@ Detalhes que a tabela não mostra:
 (código ISO 4217), `BitCoin.TxID VARCHAR(64)` (hash SHA-256 em hexadecimal),
 `CartaoCredito.nro VARCHAR(19)` (até 19 dígitos pela ISO/IEC 7812) e
 `Pais.ddi VARCHAR(4)`. O DDI não é único no mundo real (Estados Unidos, Canadá e
-o Caribe dividem o +1), então a carga usa o prefixo que distingue o país, como
-1613 para o Canadá e 77 para o Cazaquistão.
+o Caribe dividem o +1; Rússia e Cazaquistão, o +7), então a carga usa o prefixo
+que distingue o país: os países do Caribe no +1 usam 1 + código de área (1876
+para a Jamaica), o Canadá usa 1613, o Cazaquistão 77 e o Vaticano 379 (código
+reservado a ele pela UIT).
 
 **Limitações.** As escolhas pressupõem que o número de plataformas e de empresas
 nunca passe de 2,1 bilhões. O ganho de espaço do `INTEGER` em `Plataforma` e
@@ -325,8 +330,10 @@ redundância. O grupo comparou quatro alternativas:
 
 **Por que UUID.** No cenário, os vídeos chegam de dezenas de plataformas por
 crawlers. Com UUID, cada coletor gera o id na hora, sem consultar o banco, sem
-colisão prática e sem renumerar ao juntar coletas. A chance de colisão de um
-UUID v4 com *n* ids é de cerca de *n*² / 2^123:
+colisão prática e sem renumerar ao juntar coletas. O id também não é
+enumerável: com uma sequence, o id revela quantos vídeos existem e permite
+percorrer todos somando 1. A chance de colisão de um UUID v4 com *n* ids é de
+cerca de *n*² / 2^123:
 
 - no cenário realista (1,3 × 10^11 vídeos): ~1,5 × 10^-15;
 - no pior caso do professor (1,9 × 10^15 vídeos): ~3,4 × 10^-7.
@@ -468,6 +475,12 @@ A identidade real de uma empresa é o identificador nacional no país (CNPJ, EIN
 etc.), por isso `EmpresaPais` tem `UNIQUE (ddi_pais, id_nacional)` com
 `id_nacional NOT NULL`.
 
+**Alternativas.** Para aceitar razões sociais repetidas com nomes fantasia
+diferentes, seria preciso **remover** o `UNIQUE (nome)` e usar o par
+`(nome, nome_fantasia)` com `NULLS NOT DISTINCT` (PostgreSQL 15+), para que a
+fantasia nula também conte. Não foi feito: a unicidade do nome é a regra mais
+simples, e a identidade da empresa já está no identificador nacional.
+
 ### 6.3 Usuário: e-mail e telefone únicos, cada um sozinho
 
 **Decisão.** `UNIQUE (email)` e `UNIQUE (telefone)` separados.
@@ -497,8 +510,11 @@ o par idêntico e deixaria o mesmo e-mail com telefones diferentes.
 | `UNIQUE (TxID)` em `BitCoin` | O TxID é o hash da transação na blockchain e não se repete |
 | `UNIQUE (IdPayPal)` em `PayPal` | O IdPayPal identifica um pagamento |
 
-`TxID` e `IdPayPal` custam um índice cada em tabelas que crescem com as doações;
-o grupo aceitou porque pagamento duplicado é um erro que o banco deve barrar.
+`TxID` e `IdPayPal` custam um índice cada em tabelas que crescem com as doações
+(1,9% dos comentários na carga); o grupo aceitou porque pagamento duplicado é um
+erro que o banco deve barrar. O índice de `PlataformaUsuario` fica numa tabela
+de ~10^6 linhas (856 mil na carga), mas de escrita rara: uma conta por
+plataforma por usuário.
 
 ### 6.5 `NOT NULL`
 
@@ -572,7 +588,8 @@ primeiro misturaria moedas, e o ranking entre canais deixaria de ser comparável
 ### 7.3 Por que a doação é histórica e o membro é corrigido
 
 O professor comentou que o valor corrigido diz mais para escolher que canal
-patrocinar. Ainda assim, a doação ficou com o valor histórico:
+patrocinar, mas que gravar o histórico também está certo e, segundo ele, é o que
+a maioria dos grupos faz. A doação ficou com o valor histórico:
 
 1. **A doação é um evento passado; o membro é uma receita recorrente.** O valor
    corrigido dos membros é uma projeção: com o câmbio de hoje, é quanto o canal
@@ -624,19 +641,19 @@ das visualizações dos vídeos e que `qtd_users` segue o mesmo raciocínio.
 **Decisão.** Cada trigger nasce de uma regra do minimundo ou do diagrama ER que
 não cabe em `PRIMARY KEY`, `UNIQUE`, `FOREIGN KEY` ou `CHECK` (`triggers.sql`).
 
-| ID | Regra | Origem | Comportamento |
-|---|---|---|---|
-| T1 | `Canal.qtd_visualizacoes` = soma de `visu_total` dos vídeos | Atributo derivado do modelo | Soma a diferença por canal; trocar o vídeo de canal subtrai de um e soma no outro |
-| T2 | `Plataforma.qtd_users` = número de contas | Atributo derivado do modelo | +1 ou −1 por conta, por plataforma |
-| T3 | `seq` do comentário | "Número sequencial que depende do vídeo" | Se o `seq` vier nulo, usa `max(seq) + 1` do vídeo |
-| T4 | `seq_pg` da doação | "Depende do vídeo, do usuário e do comentário" | Se vier nulo, usa `max(seq_pg) + 1` do comentário |
-| T5 | `seq_plataforma` do mecanismo da plataforma | "Depende do usuário, do comentário e da plataforma" | Sequência por usuário e plataforma; exige conta na plataforma |
-| T6 | Doação em exatamente uma das quatro formas | Especialização disjunta ("d" no ER) e total ("pode ser feita de quatro formas") | Rejeita a segunda forma; no `COMMIT`, rejeita doação sem forma |
-| T7 | Fundação ≤ canal ≤ vídeo ≤ comentário | Coerência temporal (regra do grupo) | Confere as datas nos dois sentidos: ao inserir o filho e ao alterar o pai |
-| T8 | No máximo 5 níveis por canal | "Existem cinco níveis de membros" | Rejeita o sexto nível |
-| T9 | Dono de canal e participante de vídeo são streamers | Especialização de `Usuario` no ER (streamer tem passaporte) | Exige passaporte; impede apagar o último passaporte de quem tem canal |
-| T10 | O dono tem conta na plataforma do canal | Relacionamento "tem conta" do ER | Exige a conta; impede apagá-la enquanto houver canal |
-| T11 | Doação em USD | Seção 7 | Converte o valor pela moeda do país de residência |
+| ID | Regra | Origem | Tabela e evento | Comportamento |
+|---|---|---|---|---|
+| T1 | `Canal.qtd_visualizacoes` = soma de `visu_total` dos vídeos | Atributo derivado do modelo | `Video`: `AFTER INSERT`, `UPDATE` e `DELETE`, por comando | Soma a diferença por canal; trocar o vídeo de canal subtrai de um e soma no outro |
+| T2 | `Plataforma.qtd_users` = número de contas | Atributo derivado do modelo | `PlataformaUsuario`: `AFTER INSERT`, `UPDATE` e `DELETE`, por comando | +1 ou −1 por conta, por plataforma |
+| T3 | `seq` do comentário | "Número sequencial que depende do vídeo" | `Comentario`: `BEFORE INSERT` | Se o `seq` vier nulo, usa `max(seq) + 1` do vídeo |
+| T4 | `seq_pg` da doação | "Depende do vídeo, do usuário e do comentário" | `Doacao`: `BEFORE INSERT` | Se vier nulo, usa `max(seq_pg) + 1` do comentário |
+| T5 | `seq_plataforma` do mecanismo da plataforma | "Depende do usuário, do comentário e da plataforma" | `MecanismoPlat`: `BEFORE INSERT` | Sequência por usuário e plataforma; exige conta na plataforma |
+| T6 | Doação em exatamente uma das quatro formas | Especialização disjunta ("d" no ER) e total ("pode ser feita de quatro formas") | Formas: `BEFORE INSERT/UPDATE` (disjunta); `Doacao` (`AFTER INSERT`) e formas (`AFTER DELETE/UPDATE`): trigger de constraint adiado (total) | Rejeita a segunda forma; no `COMMIT`, rejeita doação sem forma |
+| T7 | Fundação ≤ canal ≤ vídeo ≤ comentário | Coerência temporal (regra do grupo) | `Comentario`, `Video` e `Canal`: `BEFORE INSERT/UPDATE` da data ou do pai; `Plataforma`: `BEFORE UPDATE` de `data_fund` | Confere as datas nos dois sentidos: ao inserir o filho e ao alterar o pai |
+| T8 | No máximo 5 níveis por canal | "Existem cinco níveis de membros" | `NivelCanal`: `BEFORE INSERT` e `UPDATE` de `id_canal` | Rejeita o sexto nível |
+| T9 | Dono de canal e participante de vídeo são streamers | Especialização de `Usuario` no ER (streamer tem passaporte) | `Canal` e `Participa`: `BEFORE INSERT/UPDATE` de `id_streamer`; `StreamerPais`: `AFTER DELETE/UPDATE` | Exige passaporte; impede apagar o último passaporte de quem tem canal |
+| T10 | O dono tem conta na plataforma do canal | Relacionamento "tem conta" do ER | `Canal`: `BEFORE INSERT/UPDATE`; `PlataformaUsuario`: `BEFORE DELETE/UPDATE` | Exige a conta; impede apagá-la enquanto houver canal |
+| T11 | Doação em USD | Seção 7 | `Doacao`: `BEFORE INSERT` | Converte o valor pela moeda do país de residência |
 
 A regra "sem histórico de patrocínios e membros" não precisa de trigger:
 resolve-se apagando a linha (`DELETE`).
@@ -646,9 +663,9 @@ resolve-se apagando a linha (`DELETE`).
 - **T1 e T2 por comando, e não por linha.** Usam tabelas de transição
   (`REFERENCING NEW/OLD TABLE`): um `INSERT` de mil vídeos do mesmo canal faz um
   único `UPDATE` no canal, e não mil. O PostgreSQL não aceita tabela de transição
-  com mais de um evento, então são três triggers por tabela. As linhas são
-  atualizadas em ordem de id, para que comandos simultâneos travem na mesma ordem
-  e não entrem em deadlock.
+  com mais de um evento nem com `UPDATE OF`, então são três triggers por
+  tabela. As linhas são atualizadas em ordem de id, para que comandos
+  simultâneos travem na mesma ordem e não entrem em deadlock.
 - **T3, T4 e T5 com trava na linha "pai".** Antes do `max + 1`, o trigger trava o
   vídeo, o comentário ou a conta (`SELECT … FOR UPDATE`). Sem a trava, duas
   inserções simultâneas calculariam o mesmo número, e a segunda falharia pela
@@ -664,8 +681,11 @@ resolve-se apagando a linha (`DELETE`).
   (seção 3.1).
 - **T10 não vale para comentário e inscrição.** Conferir a conta a cada
   comentário custaria uma busca a mais na maior tabela.
-- **T5 sem índice próprio.** É escrita rara; não vale gastar uma das 5 vagas de
-  índice.
+- **T5 sem índice próprio.** Usuário e plataforma não estão em `MecanismoPlat`:
+  o `max` percorre `MecanismoPlat` e confere cada linha pela chave de
+  `Comentario` e de `Video`, e o custo cresce com essa tabela. É escrita rara;
+  não vale gastar uma das 5 vagas de índice. Num volume real, o próximo passo
+  seria um índice de apoio.
 - **Mensagens de erro** usam os códigos de violação de integridade (23xxx), para
   que a aplicação as trate como as das constraints. O nome de cada trigger leva o
   número (`trg_t04_…`), o que também fixa a ordem dos triggers da mesma tabela,
@@ -814,6 +834,11 @@ em vários cenários.
 | 8 a 11 | `sp_obter_top_k_canais_por_*` | `k` | V4 | `k` nulo devolve todos; critérios da seção 7.4 |
 | 12 | `sp_obter_top_k_plataformas_por_streamers_e_canais` | `k`, plataforma | `Canal` | Seção 10.4 |
 
+Cada consulta ordena pelo valor que responde à pergunta, decrescente, e desempata
+por um nome, para a saída ser determinística: o item 6 ordena pelo gasto mensal
+em USD e desempata pelo nick; os itens 8 a 11 ordenam pelo valor da receita e
+desempatam pelo nome do canal.
+
 ### 10.3 Consultas reescritas antes dos índices
 
 **Exigência.** O professor orientou deixar as consultas "o melhor que você
@@ -870,11 +895,12 @@ nela, contado uma vez só. Medido na carga:
 | Interpretação | YouTube | Twitch | Kick | Efeito |
 |---|---:|---:|---:|---|
 | **Dono de ao menos um canal na plataforma (escolhida)** | 10.092 | 3.036 | 1.252 | Conta quem publica ali |
-| Streamer com conta na plataforma | 11.900 | 3.669 | 1.539 | Conta também quem só tem conta e nunca publicou; o ranking quase não muda |
+| Streamer com conta na plataforma | 11.900 | 3.669 | 1.539 | Conta também quem só tem conta e nunca publicou; o ranking quase não muda (só Kuaishou e Snapchat trocam de posição) |
 | Dono ou convidado (`Participa`) | 21.120 | 13.869 | 6.929 | Dobra ou quintuplica as plataformas de live: o convidado de uma colaboração já está no alcance do canal de quem publicou, e pode nem ter conta ali |
 
-Ter só conta não gera público; quem publica é o canal. Quem tem dois canais na
-mesma plataforma conta uma vez como streamer e duas como canal.
+Ter só conta não gera público; quem publica é o canal. A contagem usa
+`count(DISTINCT id_streamer)`: quem tem dois canais na mesma plataforma conta uma
+vez como streamer e duas como canal.
 
 **Decisão 2: o "E" sublinhado.** Ordena por streamers e desempata por canais.
 
@@ -888,7 +914,8 @@ As duas quantidades são devolvidas e as duas entram na ordem: o "E" vale para a
 listagem e para o critério.
 
 **Decisão 3: empates no corte de k entram todos.** A posição é calculada com
-`rank()`: plataformas iguais dividem a posição, e o corte é `posicao <= k`.
+`rank()`: plataformas iguais dividem a posição, e o corte é `posicao <= k`
+(equivale a `FETCH FIRST k ROWS WITH TIES`).
 Cortar no meio de um empate escolheria uma plataforma por um critério que o
 enunciado não dá (o nome). Dentro do empate, a saída é ordenada pelo nome, para
 ser determinística.
@@ -909,6 +936,14 @@ do top-k volta mesmo assim, com `no_top_k = false`.
   contexto, e não entra no critério.
 - `qtd_visualizacoes` (soma das visualizações dos canais da plataforma) é
   devolvido como medida auxiliar de alcance.
+
+**Saída.** A function recebe `p_k` e `p_nro_plataforma`, os dois opcionais, e
+devolve `posicao`, `nro_plataforma`, `nome_plataforma`, `qtd_streamers`,
+`qtd_canais`, `canais_por_streamer`, `qtd_visualizacoes`, `qtd_users` e
+`no_top_k`. O `canais_por_streamer` é uma métrica auxiliar que reforça a
+interpretação: uma plataforma com muitos canais por streamer tem menos
+audiências independentes do que o número de canais sugere, e por isso o
+critério principal é o streamer.
 
 **Desempenho** (tempo de execução a frio / a quente, mediana de 5; páginas lidas
 entre parênteses):
@@ -939,7 +974,7 @@ entre parênteses):
 
 | Caso | Resultado |
 |---|---|
-| Sem filtro, k = 10 | 10 linhas, YouTube em 1º |
+| Sem filtro, k = 10 | 10 linhas, YouTube em 1º (10.092 streamers), Kuaishou em 10º |
 | Filtro numa plataforma grande (YouTube) | 1 linha, posição 1, dentro do top-k |
 | Filtro numa plataforma pequena dentro do top-10 (Kick) | Posição 6, a do ranking geral |
 | Filtro numa plataforma fora do top-10 (Rooter) | Posição 28, `no_top_k` falso |
@@ -949,10 +984,12 @@ entre parênteses):
 | Contagem independente, por subconsultas | 28 plataformas, **0 divergências** |
 
 **Limitações.** Na carga, cada streamer tem no máximo um canal por plataforma,
-então canais = streamers em todas as plataformas e o desempate só aparece no caso
-montado da validação. O critério assume que a audiência vem de criadores
-distintos; uma leitura por visualizações daria outra ordem (o TikTok passaria o
-YouTube), por isso `qtd_visualizacoes` é devolvido ao lado.
+então canais = streamers e `canais_por_streamer` = 1,00 em todas as plataformas,
+e o desempate só aparece no caso montado da validação. Gerar canais secundários
+na carga (por exemplo, um canal de cortes) exigiria refazer a carga e toda a
+medição; ficou como melhoria futura. O critério assume que a audiência vem de
+criadores distintos; uma leitura por visualizações daria outra ordem (o TikTok
+passaria o YouTube), por isso `qtd_visualizacoes` é devolvido ao lado.
 
 ## 11. Índices de apoio
 
@@ -1029,6 +1066,9 @@ ocupa menos e também entrega as linhas em ordem.
 | `Patrocinio (id_canal)` | Não foi usado | Os itens 8 e 11 agregam a tabela toda; o item 5 com empresa já usa a chave, que começa por `nro_empresa` |
 | Índices para o top-k da V4 | Não criados | Ordenar ~23 mil linhas custa milissegundos; seriam quatro índices, um por coluna de valor |
 | `Comentario (id_usuario)` | Não criado | Nenhuma consulta filtra comentários por autor, e o índice pesaria na maior tabela |
+| Colunas de data em `Comentario` | Não criado | Nenhuma consulta filtra comentários por data |
+| `Participa (id_streamer)` | Não criado | Nenhuma consulta lê `Participa`; o item 1 conta só os vídeos dos canais do streamer |
+| `Video (visu_total)` para ordenar | Não criado | Nenhuma consulta ordena vídeos por visualizações; elas só somam `visu_total` (por isso a coluna está no `INCLUDE` do índice 5) |
 | `Canal (nro_plataforma, id_streamer) INCLUDE (qtd_visualizacoes)` | Não usado pelo planejador no item 12 | Seção 10.4; seria o sexto índice |
 
 ### 11.6 Consultas que não mudam com índice
@@ -1094,15 +1134,19 @@ mais vídeos que outros e vídeos com muito mais comentários que outros.
 seção 4, e é o volume que faz os índices fazerem diferença (seção 11.7). As
 tabelas de referência ficaram no tamanho real, abaixo de 1.000: 154 moedas ISO
 4217, 199 países e 28 plataformas reais; inflá-las com linhas fictícias deixaria
-os dados irreais.
+os dados irreais. `Empresa` tem 3.000 linhas: cerca de 70 empresas reais (donas
+de plataformas e marcas que patrocinam streamers) e as demais fictícias.
+
+O Docker local tem 5,8 GB de memória; na escala 1, o schema carregado ocupa
+cerca de 1,5 GB.
 
 ### 12.2 Distribuições
 
 | Escolha | Por quê |
 |---|---|
 | Mesmo cenário da seção 4, em escala reduzida | Plataformas de vídeo curto têm mais vídeos por canal; vídeos curtos têm só comentários offline e menos comentários por visualização |
-| Popularidade de cada canal por distribuição lognormal | Poucos canais concentram a audiência, como no mundo real. A popularidade comanda visualizações, quantidade de vídeos, membros e patrocínio |
-| Comentários proporcionais às visualizações, com cauda longa | O professor citou a relação: vídeo com muitas visualizações tem muitos comentários |
+| Popularidade de cada canal por distribuição lognormal (σ = 2,2) | Poucos canais concentram a audiência, como no mundo real. A popularidade comanda visualizações, quantidade de vídeos, membros e patrocínio |
+| Comentários proporcionais a `visu_total^0,85`, com ruído (cauda longa) | O professor citou a relação: vídeo com muitas visualizações tem muitos comentários. O expoente menor que 1 faz um vídeo viral ter dezenas de milhares de comentários sem crescer na mesma proporção das visualizações; vídeo curto recebe 30% do peso por visualização |
 | Autores de comentário e membros por lei de potência | Poucos usuários muito ativos |
 | Países e plataformas com pesos de mercado | O YouTube concentra 28% dos canais |
 | 5% dos usuários são streamers; 1,9% dos comentários trazem doação | Proporções plausíveis; uma versão anterior tinha 25% e 50% |
@@ -1212,7 +1256,7 @@ no [README.md](README.md).
 | 2. PL/pgSQL: functions, triggers, views e outros | `views.sql`, `functions.sql` (com os índices de apoio no fim) e `triggers.sql` |
 | 3. Dados para inserção | `seed.sql` (gera os dados; o arquivo é pequeno) |
 | 4. Chamadas das consultas e functions para teste | `tests.sql` |
-| 5. PDF de decisões | `decisoes_resumo.md`, com este detalhamento como complemento |
+| 5. PDF de decisões | `decisoes_resumo.pdf` (gerado do `decisoes_resumo.md`), com este detalhamento como complemento |
 
 ## Fontes
 
