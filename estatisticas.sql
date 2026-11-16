@@ -8,7 +8,6 @@
 -- predicados.md e da escolha dos índices.
 --
 -- Ordem: depois da carga e do VACUUM ANALYZE (o seed.sql já faz).
--- Saída da última execução: bench/estatisticas.txt, na tag v2.1.0.
 -- Metodologia do professor (07:03-08:00): se o filtro devolve uma fração
 -- grande da tabela, o índice não ajuda; olhar a distribuição antes.
 -- =====================================================================

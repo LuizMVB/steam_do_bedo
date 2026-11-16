@@ -212,6 +212,6 @@ Em outro PostgreSQL 17, sem Docker, a ordem é a mesma, com
 | `tests.sql` | Chamadas das functions em vários cenários |
 | `decisoes_resumo.md`, `decisoes_resumo.pdf` | Resumo das decisões de projeto e justificativas (o PDF é o entregável 5) |
 | `decisoes_detalhamento.md` | Cada decisão por extenso: exigência, alternativas, medições e limitações |
-| `benchmark.md`, `imagens/` | Comparações de desempenho e gráficos; os scripts e os planos de cada medida ficam na pasta `bench/` da tag `v2.1.0` |
+| `benchmark.md`, `imagens/` | Comparações de desempenho, resultados consolidados e gráficos |
 | `predicados.md`, `estatisticas.sql` | Inventário dos predicados das consultas e distribuição das colunas, base da escolha dos índices |
 | `docker-compose.yml`, `Makefile` | Ambiente e atalhos de execução |

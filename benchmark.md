@@ -7,20 +7,17 @@ consultas, views e índices (seções 9 a 11 do
 [`imagens/`](imagens/).
 
 Cada teste abaixo traz:
+
 - **O que foi medido:** a pergunta que o teste responde;
 - **Como:** o que muda entre as barras e o que fica fixo;
 - **Legenda do gráfico:** o que são os eixos, as cores e os rótulos;
-- **Resultado:** os números e a conclusão. **Cada número é um link** para o
-  arquivo com o `EXPLAIN ANALYZE` de onde ele saiu (ver "De onde vem cada
-  número", logo abaixo). Esses arquivos, os scripts e os dados brutos ficam na
-  pasta `bench/` da tag [`v2.1.0`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench), fora da versão atual do
-  repositório, e os links apontam para lá.
+- **Resultado:** os números consolidados e a conclusão.
 
 ## Ambiente e protocolo
 
 | Item | Valor |
 |---|---|
-| Banco | PostgreSQL 17.12 (Docker `postgres:17`, aarch64), num MacBook Air M1 ([configuracao.txt](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/configuracao.txt)) |
+| Banco | PostgreSQL 17.12 (Docker `postgres:17`, aarch64), num MacBook Air M1 |
 | Configuração | Padrão do container: `shared_buffers` 128 MB, `work_mem` 4 MB, `effective_cache_size` 4 GB |
 | Sessão de medida | `jit = off` e `max_parallel_workers_per_gather = 0`, para os tempos serem comparáveis |
 | Dados | Seed na escala 1, versão atual (chave de `Video` em UUID v4 nativo): cerca de 8,7 milhões de registros e 1,5 GB de schema |
@@ -29,62 +26,25 @@ Cada teste abaixo traz:
 | A quente | Uma execução de aquecimento descartada e depois as medidas, sem reiniciar |
 | Repetições | 5 por cenário; o valor usado é a **mediana** |
 | Volume | 760 medidas de consulta (76 cenários × 2 estados de cache × 5), 27 de `INSERT` e 12 de `REFRESH` |
-| Script | [`bench/aferir.py`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/aferir.py), com as consultas alternativas em [`bench/consultas_alternativas.sql`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/consultas_alternativas.sql) |
 
-### De onde vem cada número
+### Critérios das medidas
 
-Cada célula medida (consulta × cenário de índices × cache) tem um arquivo em
-[`bench/planos/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/). O arquivo começa com um cabeçalho e traz
-depois o plano completo:
-
-```text
--- Item 6 · filtro: usuario · variante: final
--- Cenário de índices: final (índices de apoio entregues: ...)
--- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
--- Consulta medida:
---   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario('ghost.yt_297686');
--- Repetições (Execution Time e Buffers do nó raiz de cada uma):
---   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
---     1 |         9.159 |            28.129 |          54 |         69 |     123
---     2 |         2.627 |            13.541 |          54 |         69 |     123
---     3 |         7.057 |            17.468 |          54 |         69 |     123
---     4 |         4.478 |            17.778 |          54 |         69 |     123  <- mediana
---     5 |         4.257 |            12.670 |          54 |         69 |     123
--- Mediana do tempo: 4.478 ms (repetições em ordem: 2.6, 4.3, 4.5, 7.1, 9.2)
--- Abaixo, o plano completo da repetição 4 (a mediana).
-
-Subquery Scan on "*SELECT*"  (cost=30.00..30.01 rows=1 width=136) (actual time=3.896..3.900 rows=1 loops=1)
-  Buffers: shared hit=69 read=54          <- páginas lidas = 54 + 69 = 123
-  ...
-Execution Time: 4.478 ms                  <- o tempo citado (4,5 ms)
-```
-
-- **Tempo citado** = `Execution Time` da repetição mediana. O arquivo guarda o
-  plano **dessa** repetição, então o número do texto aparece no fim do plano.
+- **Tempo citado** = `Execution Time` da repetição mediana, obtido com
+  `EXPLAIN (ANALYZE, BUFFERS)`.
 - **Páginas lidas** = `shared read + shared hit` da linha `Buffers` do nó raiz
   (a primeira do plano), na mesma repetição.
-- **Nó que explica o resultado** (`Seq Scan`, `Index Only Scan` etc.) é o que
-  aparece no plano do arquivo.
-- **Todas as repetições**, com tempo e páginas, estão em
-  [`bench/resultados.csv`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/resultados.csv). A coluna `mediana = 1`
-  marca a repetição do plano gravado, e a coluna `plano` dá o caminho do
-  arquivo.
-- **Item 12 é plpgsql:** o `EXPLAIN` de fora mostra só um `Function Scan`. Por
-  isso as chamadas plpgsql rodaram com `auto_explain`
-  (`log_nested_statements`), e o plano da consulta de dentro está no mesmo
-  arquivo, logo depois do plano externo.
-
-Os nomes dos arquivos seguem `<consulta>__<variante>__<cenário>__<cache>.txt`,
-agrupados por fase: `base/` (sem índices de apoio), `final/` (com os índices
-entregues), `reescrita/`, `hash/`, `plataforma/`, `item12/` e `escrita/`.
+- **Nó que explica o resultado** (`Seq Scan`, `Index Only Scan` etc.) é o
+  observado no plano de execução.
+- **Item 12 é plpgsql:** o `EXPLAIN` externo mostra só um `Function Scan`.
+  Para observar a consulta interna, foi usado `auto_explain` com
+  `log_nested_statements`.
 
 ### Como ler os números
 
 - **Páginas lidas** são a métrica mais estável. Elas se repetem quase
   idênticas nas 5 repetições, enquanto o tempo a frio de uma mesma consulta
-  chega a variar de 2 a 3 vezes (o arquivo de cada plano mostra as 5
-  repetições lado a lado). A causa é o disco da VM do Docker: o
-  `drop_caches` esvazia o cache dentro da VM, mas o macOS ainda pode ter
+  chega a variar de 2 a 3 vezes entre as 5 repetições. A causa é o disco
+  da VM do Docker: o `drop_caches` esvazia o cache dentro da VM, mas o macOS ainda pode ter
   parte do arquivo de disco da VM em memória.
 - **Os tempos absolutos dependem da máquina.** O que vale é a comparação entre
   cenários.
@@ -97,7 +57,7 @@ entregues), `reescrita/`, `hash/`, `plataforma/`, `item12/` e `escrita/`.
 
 Os gráficos 01, 02 e 06 têm uma barra por consulta, no formato
 `item N · filtro`. O número é o da consulta do enunciado; o filtro é o valor
-passado ao parâmetro opcional ([filtros.json](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/filtros.json)):
+passado ao parâmetro opcional:
 
 | Rótulo | Valor passado | Por que esse valor |
 |---|---|---|
@@ -120,7 +80,7 @@ parece não fazer diferença.
 
 **Como:** as mesmas consultas, sem índices de apoio (só PK, `UNIQUE` e os
 `UNIQUE` das views materializadas), medidas de dois jeitos. Muda só o estado do
-cache. Planos em [`bench/planos/base/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/base/).
+cache.
 
 **Legenda do gráfico 06:**
 - **Eixo vertical:** tempo de execução em ms, escala log.
@@ -134,13 +94,13 @@ cache. Planos em [`bench/planos/base/`](https://github.com/LuizMVB/steam_do_bedo
 
 | Consulta | A frio | A quente | Diferença |
 |---|---:|---:|---:|
-| Item 2, filtro por canal | [631 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_com__final__sem_apoio__frio.txt) (2.955) | [11,3 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_com__final__sem_apoio__quente.txt) (0) | 56× |
-| Item 3, filtro por streamer | [224 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_com__final__sem_apoio__frio.txt) (1.679) | [11,4 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_com__final__sem_apoio__quente.txt) (0) | 20× |
-| Item 5, filtro por empresa | [15,3 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i05_com__final__sem_apoio__frio.txt) (543) | [2,7 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i05_com__final__sem_apoio__quente.txt) (0) | 5,7× |
-| Item 7, filtro por canal | [95 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i07_com__final__sem_apoio__frio.txt) (1.848) | [19,6 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i07_com__final__sem_apoio__quente.txt) (0) | 4,8× |
-| Item 1, plataforma pequena (Kick) | [749 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_peq__final__sem_apoio__frio.txt) (22.527) | [261 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_peq__final__sem_apoio__quente.txt) (19.751) | 2,9× |
-| Item 1, sem filtro | [2.981 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_sem__final__sem_apoio__frio.txt) (28.599) | [1.062 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_sem__final__sem_apoio__quente.txt) (27.806) | 2,8× |
-| Item 2, sem filtro | [10.242 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_sem__final__sem_apoio__frio.txt) (32.224) | [9.651 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_sem__final__sem_apoio__quente.txt) (31.174) | 1,1× |
+| Item 2, filtro por canal | 631 ms (2.955) | 11,3 ms (0) | 56× |
+| Item 3, filtro por streamer | 224 ms (1.679) | 11,4 ms (0) | 20× |
+| Item 5, filtro por empresa | 15,3 ms (543) | 2,7 ms (0) | 5,7× |
+| Item 7, filtro por canal | 95 ms (1.848) | 19,6 ms (0) | 4,8× |
+| Item 1, plataforma pequena (Kick) | 749 ms (22.527) | 261 ms (19.751) | 2,9× |
+| Item 1, sem filtro | 2.981 ms (28.599) | 1.062 ms (27.806) | 2,8× |
+| Item 2, sem filtro | 10.242 ms (32.224) | 9.651 ms (31.174) | 1,1× |
 
 - **Nas consultas com filtro seletivo, a diferença é enorme:** elas leem poucas
   páginas, e a quente todas já estão no `shared_buffers` (`shared read` = 0 no
@@ -149,8 +109,8 @@ cache. Planos em [`bench/planos/base/`](https://github.com/LuizMVB/steam_do_bedo
   inteira, que não cabe no `shared_buffers` de 128 MB. Até a quente, o plano
   mostra quase todas as páginas como `read` (vindas do cache do sistema, não do
   `shared_buffers`).
-- **No item 6 por usuário, a quente ficou acima do frio** ([155 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i06_com__final__sem_apoio__frio.txt)
-  contra [185 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i06_com__final__sem_apoio__quente.txt)),
+- **No item 6 por usuário, a quente ficou acima do frio** (155 ms
+  contra 185 ms),
   com `shared read` = 0. As 5 repetições a quente vão de 94 a 244 ms: é
   variação entre repetições, não efeito do cache.
 
@@ -165,9 +125,8 @@ Medindo só a quente, quase toda consulta filtrada parece instantânea, e o índ
 criar índice, como o professor orientou.
 
 **Como:** os itens 2 e 3, com e sem filtro, escritos de três formas, todas sem
-índices de apoio e a frio. Muda só o texto da consulta. As formas "original" e
-"reescrita" estão em [`bench/consultas_alternativas.sql`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/consultas_alternativas.sql);
-a final é a de `functions.sql`.
+índices de apoio e a frio. Muda só o texto da consulta. A forma final é a de
+`functions.sql`; as diferenças entre as três formas estão descritas na legenda.
 
 **Legenda do gráfico 03:**
 - **Eixo vertical:** tempo de execução em ms, escala log.
@@ -183,10 +142,10 @@ a final é a de `functions.sql`.
 
 | Consulta | Original (agrega tudo, depois filtra) | Reescrita (filtra antes) | Final (sobre a V3) |
 |---|---:|---:|---:|
-| Item 2, sem filtro | [8.435 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i02_sem__original__sem_apoio__frio.txt) (138.917) | [17.541 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i02_sem__reescrita__sem_apoio__frio.txt) (214.491) | [10.242 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_sem__final__sem_apoio__frio.txt) (32.230) |
-| Item 2, filtro por canal | [3.931 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i02_com__original__sem_apoio__frio.txt) (114.281) | [1.112 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i02_com__reescrita__sem_apoio__frio.txt) (8.217) | [**631 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_com__final__sem_apoio__frio.txt) (5.156), 6,2× |
-| Item 3, sem filtro | [6.784 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i03_sem__original__sem_apoio__frio.txt) (85.227) | [42.546 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i03_sem__reescrita__sem_apoio__frio.txt) (85.233) | [**1.006 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_sem__final__sem_apoio__frio.txt) (20.470), 6,7× |
-| Item 3, filtro por streamer | [7.492 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i03_com__original__sem_apoio__frio.txt) (114.986) | [997 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i03_com__reescrita__sem_apoio__frio.txt) (6.241) | [**224 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_com__final__sem_apoio__frio.txt) (1.689), 33× |
+| Item 2, sem filtro | 8.435 ms (138.917) | 17.541 ms (214.491) | 10.242 ms (32.230) |
+| Item 2, filtro por canal | 3.931 ms (114.281) | 1.112 ms (8.217) | **631 ms** (5.156), 6,2× |
+| Item 3, sem filtro | 6.784 ms (85.227) | 42.546 ms (85.233) | **1.006 ms** (20.470), 6,7× |
+| Item 3, filtro por streamer | 7.492 ms (114.986) | 997 ms (6.241) | **224 ms** (1.689), 33× |
 
 (O "×" compara a versão final com a original.)
 
@@ -201,8 +160,7 @@ a final é a de `functions.sql`.
 - **O item 2 sem filtro continua caro,** e a versão final não ficou mais
   rápida que a original (10,2 contra 8,4 s), embora leia 4 vezes menos
   páginas. Ele devolve e ordena 1,25 milhão de vídeos, e o custo está em
-  ordenar a saída: `Sort Method: external merge  Disk: 108808kB` no
-  [plano](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i02_sem__final__sem_apoio__frio.txt). Com
+  ordenar a saída: `Sort Method: external merge  Disk: 108808kB`. Com
   `LIMIT`, que é como a consulta é usada, vira uma ordenação parcial em
   memória.
 
@@ -231,8 +189,8 @@ de onde a consulta lê.
 
 | Consulta (k = 10) | Direta nas tabelas | Sobre as views virtuais V1/V2 | Sobre a materializada V4 |
 |---|---:|---:|---:|
-| Item 10 | [732 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i10_k10__direta__sem_apoio__frio.txt) (171.696) | [756 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i10_k10__virtual__sem_apoio__frio.txt) (171.699) | [**27,8 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i10_k10__final__sem_apoio__frio.txt) (952), 26× |
-| Item 11 | [3.279 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i11_k10__direta__sem_apoio__frio.txt) (185.222) | [2.712 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/reescrita/i11_k10__virtual__sem_apoio__frio.txt) (185.322) | [**37,3 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i11_k10__final__sem_apoio__frio.txt) (952), 88× |
+| Item 10 | 732 ms (171.696) | 756 ms (171.699) | **27,8 ms** (952), 26× |
+| Item 11 | 3.279 ms (185.222) | 2.712 ms (185.322) | **37,3 ms** (952), 88× |
 
 - **A view virtual não acelera:** o planejador a expande dentro da consulta. Os
   planos da direta e da virtual têm os mesmos nós (`Seq Scan on doacao`,
@@ -242,7 +200,7 @@ de onde a consulta lê.
   plano lê só `mv_faturamento_canal` e `canal` (952 páginas).
 
 **Custo de atualizar as materializadas** (tempo do `REFRESH`, mediana de 3, sem
-gráfico; origem em [`bench/planos/escrita/refresh.txt`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/refresh.txt)):
+gráfico):
 
 | View | `REFRESH` comum | `REFRESH CONCURRENTLY` |
 |---|---:|---:|
@@ -263,9 +221,7 @@ O `REFRESH` não aceita `EXPLAIN`: o tempo foi medido dentro do servidor, com
 consulta.
 
 **Como:** as consultas dos itens 1 a 12, a frio, já na forma final (com as views
-V3 e V4). Muda só a presença dos índices de apoio das tabelas base. Planos em
-[`bench/planos/base/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/base/) (sem) e
-[`bench/planos/final/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/final/) (com).
+V3 e V4). Muda só a presença dos índices de apoio das tabelas base.
 
 **Legenda dos gráficos 01 e 02:**
 - **Eixo vertical do 01:** tempo de execução a frio em ms (mediana de 5), escala
@@ -283,13 +239,13 @@ plano e nas páginas lidas:
 
 | Consulta | Sem índice de apoio | Com índice de apoio | Índice |
 |---|---|---|---|
-| Item 6, filtro por usuário | [155 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i06_com__final__sem_apoio__frio.txt), 4.135 páginas (`Seq Scan on inscricao`) | [**4,5 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i06_com__final__final__frio.txt), 123 páginas (`Bitmap Index Scan on idx_inscricao_id_membro`) | `idx_inscricao_id_membro` |
-| Item 1, plataforma pequena (Kick) | [749 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_peq__final__sem_apoio__frio.txt), 25.526 páginas (`Seq Scan on video`) | [**444 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i01_peq__final__final__frio.txt), 9.530 páginas (`Index Only Scan using idx_video_id_canal_cobertura`) | `idx_video_id_canal_cobertura` |
-| Item 3, filtro por streamer | [224 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_com__final__sem_apoio__frio.txt), 1.689 páginas (`Seq Scan on canal`); [11,4 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_com__final__sem_apoio__quente.txt) a quente | [**217 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i03_com__final__final__frio.txt), 1.027 páginas (`Index Scan using idx_canal_id_streamer`); [**1,8 ms**](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i03_com__final__final__quente.txt) a quente | `idx_canal_id_streamer` |
+| Item 6, filtro por usuário | 155 ms, 4.135 páginas (`Seq Scan on inscricao`) | **4,5 ms**, 123 páginas (`Bitmap Index Scan on idx_inscricao_id_membro`) | `idx_inscricao_id_membro` |
+| Item 1, plataforma pequena (Kick) | 749 ms, 25.526 páginas (`Seq Scan on video`) | **444 ms**, 9.530 páginas (`Index Only Scan using idx_video_id_canal_cobertura`) | `idx_video_id_canal_cobertura` |
+| Item 3, filtro por streamer | 224 ms, 1.689 páginas (`Seq Scan on canal`); 11,4 ms a quente | **217 ms**, 1.027 páginas (`Index Scan using idx_canal_id_streamer`); **1,8 ms** a quente | `idx_canal_id_streamer` |
 
 No item 1 com o Kick, a quente o índice leva de
-[261 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_peq__final__sem_apoio__quente.txt) para
-[20,8 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i01_peq__final__final__quente.txt). No item 3,
+261 ms para
+20,8 ms. No item 3,
 a frio, as duas versões ficam perto de 220 ms: o tempo é dominado pelo
 primeiro acesso ao disco e ao catálogo, e o ganho aparece nas páginas e a
 quente.
@@ -299,20 +255,20 @@ Onde **não** há ganho, o plano e as páginas lidas são os mesmos com e sem
 - **Itens sem filtro (1, 2, 3, 4, 6, 7) e item 1 com o YouTube** (28% dos
   canais): leem quase a tabela toda, e a varredura sequencial vence. É o caso
   "todos americanos" do professor. Exemplo: o item 1 com o YouTube lê 28.605
-  páginas com `Seq Scan on video` [sem](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_grd__final__sem_apoio__frio.txt)
-  e [com](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i01_grd__final__final__frio.txt) o índice.
+  páginas com `Seq Scan on video` sem
+  e com o índice.
 - **Itens 8 a 11:** ordenam as 22,7 mil linhas da V4 lendo 952 páginas, nos
   dois cenários.
 - **Item 12:** lê `Canal` inteira nos dois cenários (seção 7).
 
 Algumas barras do gráfico 01 mudam sem nenhuma mudança de plano nem de páginas
 lidas no gráfico 02:
-- item 1 sem filtro: de [2.981](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i01_sem__final__sem_apoio__frio.txt)
-  para [1.111 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i01_sem__final__final__frio.txt);
-- item 3 sem filtro: de [1.006](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i03_sem__final__sem_apoio__frio.txt)
-  para [1.952 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i03_sem__final__final__frio.txt);
-- item 7 por canal: de [95](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i07_com__final__sem_apoio__frio.txt)
-  para [253 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i07_com__final__final__frio.txt).
+- item 1 sem filtro: de 2.981
+  para 1.111 ms;
+- item 3 sem filtro: de 1.006
+  para 1.952 ms;
+- item 7 por canal: de 95
+  para 253 ms.
 
 Esses três casos não usam nenhum índice novo e leem as mesmas páginas. A
 diferença é variação da leitura a frio no disco da VM. No item 1 sem filtro
@@ -340,19 +296,19 @@ item 6 por usuário (`Inscricao.id_membro`).
 
 | Consulta | Tipo | A frio | A quente | Páginas lidas |
 |---|---|---:|---:|---:|
-| Item 6, por usuário | B-tree | [4,5 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i06_com__final__final__frio.txt) | [0,5 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i06_com__final__final__quente.txt) | 123 |
-| Item 6, por usuário | hash | [4,3 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/hash/i06_com__final__hash__frio.txt) | [0,4 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/hash/i06_com__final__hash__quente.txt) | 122 |
-| Item 3, por streamer | B-tree | [217 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i03_com__final__final__frio.txt) | [1,8 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i03_com__final__final__quente.txt) | 1.027 |
-| Item 3, por streamer | hash | [207 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/hash/i03_com__final__hash__frio.txt) | [1,8 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/hash/i03_com__final__hash__quente.txt) | 1.027 |
+| Item 6, por usuário | B-tree | 4,5 ms | 0,5 ms | 123 |
+| Item 6, por usuário | hash | 4,3 ms | 0,4 ms | 122 |
+| Item 3, por streamer | B-tree | 217 ms | 1,8 ms | 1.027 |
+| Item 3, por streamer | hash | 207 ms | 1,8 ms | 1.027 |
 
 **Resultado da escrita** (teste da seção 6, mediana de 3):
 
 | Índice | Tipo | Tamanho (lote de teste) | `INSERT` em lote |
 |---|---|---:|---:|
-| `Inscricao (id_membro)`, 300 mil linhas | B-tree | 8,4 MB | [2.206 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_inscricao__id_membro__btree.txt) |
-| `Inscricao (id_membro)`, 300 mil linhas | hash | 10,1 MB | [1.719 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_inscricao__id_membro__hash.txt) |
-| `Canal (id_streamer)`, 35,9 mil linhas | B-tree | 1,0 MB | [330 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__id_streamer__btree.txt) |
-| `Canal (id_streamer)`, 35,9 mil linhas | hash | 1,3 MB | [659 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__id_streamer__hash.txt) |
+| `Inscricao (id_membro)`, 300 mil linhas | B-tree | 8,4 MB | 2.206 ms |
+| `Inscricao (id_membro)`, 300 mil linhas | hash | 10,1 MB | 1.719 ms |
+| `Canal (id_streamer)`, 35,9 mil linhas | B-tree | 1,0 MB | 330 ms |
+| `Canal (id_streamer)`, 35,9 mil linhas | hash | 1,3 MB | 659 ms |
 
 - **Os dois leem as mesmas páginas** e têm o mesmo plano (`Bitmap Index Scan`
   no item 6, `Index Scan` no item 3). As diferenças de tempo são de décimos de
@@ -378,8 +334,7 @@ mandatório 4.
   (`ORDER BY random()`, como chegariam os dados reais), numa cópia vazia com as
   mesmas PK, `UNIQUE` e `CHECK`, com e sem o índice. `CHECKPOINT` antes de cada
   rodada; 3 rodadas; mediana. A cópia não tem FKs, para medir só o custo de
-  manter o índice. Cada `INSERT` foi medido com `EXPLAIN (ANALYZE, BUFFERS)`, e
-  o plano da rodada mediana está em [`bench/planos/escrita/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/escrita/).
+  manter o índice. Cada `INSERT` foi medido com `EXPLAIN (ANALYZE, BUFFERS)`.
 - **Lote:** 300 mil linhas em `Inscricao` e `Video`; a tabela inteira em `Canal`
   (35,9 mil).
 
@@ -394,28 +349,27 @@ um índice, identificado pela tabela e pela coluna):
   `INSERT` do lote levou com o índice, em %.
 - **Painel verde, "Tamanho do índice":** tamanho do índice **no lote medido**, em
   MB. Não é o tamanho na tabela inteira, que está na última coluna da tabela
-  abaixo ([tamanhos.csv](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/tamanhos.csv)).
+  abaixo.
 
 **Resultado:**
 
 | Índice | Linhas | Sem índice | Com índice | Overhead | Ganho de leitura (a frio) | Tamanho na tabela inteira |
 |---|---:|---:|---:|---:|---:|---:|
-| `idx_inscricao_id_membro` | 300 mil | [1.355 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_inscricao__id_membro__nenhum.txt) | [2.206 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_inscricao__id_membro__btree.txt) | +63% | 35× (155 → 4,5 ms) | 10,4 MB |
-| `idx_canal_id_streamer` | 35,9 mil | [279 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__id_streamer__nenhum.txt) | [330 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__id_streamer__btree.txt) | +18% | 1,03× (páginas 1.689 → 1.027; a quente 6×) | 0,7 MB |
-| `idx_video_id_canal_cobertura` | 300 mil | [4.542 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_video__id_canal_inc_visu_total__nenhum.txt) | [4.848 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_video__id_canal_inc_visu_total__btree.txt) | +7% | 1,7× (749 → 444 ms; a quente 13×) | 37,5 MB |
-| `Canal (nro_plataforma)`, descartado | 35,9 mil | [279 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__id_streamer__nenhum.txt) | [329 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/escrita/insert_canal__nro_plataforma__btree.txt) | +18% | nenhum (444 → 585 ms) | 0,3 MB |
+| `idx_inscricao_id_membro` | 300 mil | 1.355 ms | 2.206 ms | +63% | 35× (155 → 4,5 ms) | 10,4 MB |
+| `idx_canal_id_streamer` | 35,9 mil | 279 ms | 330 ms | +18% | 1,03× (páginas 1.689 → 1.027; a quente 6×) | 0,7 MB |
+| `idx_video_id_canal_cobertura` | 300 mil | 4.542 ms | 4.848 ms | +7% | 1,7× (749 → 444 ms; a quente 13×) | 37,5 MB |
+| `Canal (nro_plataforma)`, descartado | 35,9 mil | 279 ms | 329 ms | +18% | nenhum (444 → 585 ms) | 0,3 MB |
 
 - **O mais caro, de `Inscricao`, é aceito:** inscrição é escrita rara e a busca
   por usuário é frequente.
 - **`Canal (nro_plataforma)` foi descartado.** Com ele, o planejador troca o
   `Seq Scan on canal` por um `Bitmap Index Scan`, mas `Canal` tem só 665
   páginas, e as páginas lidas quase não mudam:
-  - item 1 com o Kick: 9.530 → 9.446, e o tempo foi de [444](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i01_peq__final__final__frio.txt)
-    para [585 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/plataforma/i01_peq__final__final_plataforma__frio.txt);
-  - item 4 com o Kick: 21.362 → 21.278, de [395](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i04_peq__final__final__frio.txt)
-    para [436 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/plataforma/i04_peq__final__final_plataforma__frio.txt);
-  - item 12: o plano interno continua com `Seq Scan on canal` (planos em
-    [`bench/planos/plataforma/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/plataforma/)).
+  - item 1 com o Kick: 9.530 → 9.446, e o tempo foi de 444
+    para 585 ms;
+  - item 4 com o Kick: 21.362 → 21.278, de 395
+    para 436 ms;
+  - item 12: o plano interno continua com `Seq Scan on canal`.
 
   O custo desses itens está em `Video` e `Doacao`, não em `Canal`.
 
@@ -430,8 +384,8 @@ mais compensariam.
 **Como:** três chamadas do item 12, todas com `k = 10`: sem filtro, com filtro
 pela Kick (plataforma pequena) e pelo YouTube (plataforma grande). A frio,
 mediana de 5. Muda só a forma de implementação. A versão final e a V5 são
-plpgsql; nelas o arquivo do plano traz também o plano da consulta interna
-(`auto_explain`), que mostra o que a function realmente lê.
+plpgsql; nelas foi observado também o plano da consulta interna com
+`auto_explain`, para identificar o que a function realmente lê.
 
 **Legenda do gráfico 08:**
 - **Eixo vertical:** tempo de execução a frio em ms, escala log.
@@ -455,12 +409,12 @@ parênteses):
 
 | Forma | Sem filtro (k = 10) | Filtro Kick | Filtro YouTube |
 |---|---|---|---|
-| Versão anterior (sem posição global) | [55](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__anterior__sem_apoio__frio.txt) / [46 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__anterior__sem_apoio__quente.txt) (675) | [11](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__anterior__sem_apoio__frio.txt) / [3,1 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__anterior__sem_apoio__quente.txt) (672) | [16](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__anterior__sem_apoio__frio.txt) / [8,6 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__anterior__sem_apoio__quente.txt) (672) |
-| Final, sem índices de apoio | [97](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_sem__final__sem_apoio__frio.txt) / [68 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_sem__final__sem_apoio__quente.txt) (1.434) | [72](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_peq__final__sem_apoio__frio.txt) / [55 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_peq__final__sem_apoio__quente.txt) (1.431) | [72](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_grd__final__sem_apoio__frio.txt) / [55 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/base/i12_grd__final__sem_apoio__quente.txt) (1.431) |
-| **Final, com os índices entregues** | [84](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_sem__final__final__frio.txt) / [57 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_sem__final__final__quente.txt) (1.446) | [111](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_peq__final__final__frio.txt) / [71 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_peq__final__final__quente.txt) (1.443) | [82](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_grd__final__final__frio.txt) / [135 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/final/i12_grd__final__final__quente.txt) (1.443) |
-| Final + índice de cobertura em `Canal` | [75](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__final__final_item12__frio.txt) / [56 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__final__final_item12__quente.txt) (1.464) | [75](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__final__final_item12__frio.txt) / [57 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__final__final_item12__quente.txt) (1.461) | [76](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__final__final_item12__frio.txt) / [57 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__final__final_item12__quente.txt) (1.461) |
-| Sobre uma V5 virtual | [73](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__v5_virtual__sem_apoio__frio.txt) / [55 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__v5_virtual__sem_apoio__quente.txt) (1.381) | [71](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__v5_virtual__sem_apoio__frio.txt) / [55 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__v5_virtual__sem_apoio__quente.txt) (1.377) | [74](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__v5_virtual__sem_apoio__frio.txt) / [56 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__v5_virtual__sem_apoio__quente.txt) (1.377) |
-| Sobre uma V5 materializada | [7,1](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__v5_mat__sem_apoio__frio.txt) / [1,1 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_sem__v5_mat__sem_apoio__quente.txt) (299) | [7,0](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__v5_mat__sem_apoio__frio.txt) / [1,2 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_peq__v5_mat__sem_apoio__quente.txt) (300) | [7,2](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__v5_mat__sem_apoio__frio.txt) / [4,0 ms](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/planos/item12/i12_grd__v5_mat__sem_apoio__quente.txt) (300) |
+| Versão anterior (sem posição global) | 55 / 46 ms (675) | 11 / 3,1 ms (672) | 16 / 8,6 ms (672) |
+| Final, sem índices de apoio | 97 / 68 ms (1.434) | 72 / 55 ms (1.431) | 72 / 55 ms (1.431) |
+| **Final, com os índices entregues** | 84 / 57 ms (1.446) | 111 / 71 ms (1.443) | 82 / 135 ms (1.443) |
+| Final + índice de cobertura em `Canal` | 75 / 56 ms (1.464) | 75 / 57 ms (1.461) | 76 / 57 ms (1.461) |
+| Sobre uma V5 virtual | 73 / 55 ms (1.381) | 71 / 55 ms (1.377) | 74 / 56 ms (1.377) |
+| Sobre uma V5 materializada | 7,1 / 1,1 ms (299) | 7,0 / 1,2 ms (300) | 7,2 / 4,0 ms (300) |
 
 - **O custo vem da posição global.** Para dar a posição real mesmo com filtro, a
   consulta agrupa `Canal` inteira e conta os streamers distintos. No plano
@@ -478,43 +432,9 @@ parênteses):
   numa resposta de 28 linhas, e o item 12 deixaria de ser exato até a próxima
   atualização da view.
 
-## Arquivos de origem
+## Documentação complementar
 
-Tudo na pasta [`bench/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench) da tag `v2.1.0`. A pasta saiu da versão
-atual para o repositório ficar só com a entrega; o inventário de predicados e a
-consulta de estatísticas foram mantidos na raiz.
-
-| Arquivo | O que é |
-|---|---|
-| [`aferir.py`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/aferir.py) | Script da aferição: aplica cada cenário de índices, mede a frio e a quente e grava os arquivos abaixo |
-| [`consultas_alternativas.sql`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/consultas_alternativas.sql) | Schema `bench` com as formas alternativas das consultas (original, reescrita, virtual, item 12 anterior e V5) |
-| [`graficos.py`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/graficos.py) | Gera os gráficos de `imagens/` a partir do `resultados.csv` (usa a repetição mediana de cada célula, a do plano gravado) |
-| [`resultados.csv`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/resultados.csv) | Uma linha por medida de consulta (760), com tempo, páginas, nós de varredura e o caminho do plano |
-| [`escrita.csv`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/escrita.csv) | `INSERT` em lote e `REFRESH`: as 3 rodadas, a mediana e o tamanho do índice |
-| [`tamanhos.csv`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/tamanhos.csv) | Tamanho de cada tabela e índice no cenário final |
-| [`planos/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench/planos/) | Um `EXPLAIN (ANALYZE, BUFFERS)` por célula, com a tabela das repetições |
-| [`filtros.json`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/filtros.json), [`configuracao.txt`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/configuracao.txt) | Valores de filtro usados e configuração do servidor |
-| [`predicados.md`](predicados.md) e [`estatisticas.sql`](estatisticas.sql), na raiz; [`estatisticas.txt`](https://github.com/LuizMVB/steam_do_bedo/blob/v2.1.0/bench/estatisticas.txt) | Inventário dos predicados das functions e a distribuição de cada coluna (base da escolha dos índices) |
-
-Para refazer a medição (de 1 a 2 horas; reinicia o container a cada medida a
-frio), primeiro extraia a pasta `bench/` da tag, sem adicioná-la ao Git:
-
-```bash
-git archive v2.1.0 bench | tar -x
-```
-
-```bash
-docker compose exec -T db psql -U admin -d postgres -c "CREATE DATABASE stream_bench"
-```
-
-```bash
-for f in ddl seed views functions bench/consultas_alternativas; do docker compose exec -T db psql -U admin -d stream_bench -v ON_ERROR_STOP=1 -f /workspace/$f.sql; done
-```
-
-```bash
-python3 bench/aferir.py
-```
-
-```bash
-python3 bench/graficos.py
-```
+- [`predicados.md`](predicados.md): inventário dos predicados das functions e
+  distribuição das colunas que orientam a escolha dos índices.
+- [`estatisticas.sql`](estatisticas.sql): consultas de distribuição e `pg_stats`
+  para executar sobre os dados carregados.

@@ -11,7 +11,7 @@ Base da escolha dos índices de apoio. Metodologia do professor
 3. pelo **tipo do predicado**, escolher o tipo do índice (B-tree ou hash).
 
 A distribuição vem do `pg_stats` e de contagens sobre o seed na escala 1
-(`estatisticas.sql`; a saída, `bench/estatisticas.txt`, está na tag `v2.1.0`).
+([`estatisticas.sql`](estatisticas.sql)).
 
 ## Tabela de predicados
 

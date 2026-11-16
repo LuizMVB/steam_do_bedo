@@ -1210,7 +1210,7 @@ plano mostrar páginas lidas do disco (`shared read` > 0).
 **Configuração fixa.** PostgreSQL 17 em Docker, `shared_buffers` de 128 MB e
 `work_mem` de 4 MB (os padrões). Na sessão de medida, `jit = off` (a compilação
 JIT soma um tempo variável) e um único processo por consulta, para os tempos
-serem comparáveis. A medição usou um banco separado (`stream_bench`), carregado
+serem comparáveis. A medição usou um banco separado, carregado
 com os arquivos da entrega, para não mexer nos dados do projeto.
 
 **Por quê.** O cache esconde o custo: o item 2 com filtro leva 631 ms a frio e
@@ -1220,10 +1220,9 @@ uniformes, chegou a conclusões sobre índices que não se sustentaram a frio
 
 **Limitações.** O planejamento a frio inclui carregar o catálogo, por isso o
 tempo de planejamento e o de execução são registrados separados, e os gráficos
-usam o de execução. Os tempos absolutos dependem do disco da máquina. O script, os
-resultados brutos e o `EXPLAIN ANALYZE` de cada medida estão na pasta
-[`bench/`](https://github.com/LuizMVB/steam_do_bedo/tree/v2.1.0/bench) da tag `v2.1.0`; o resultado consolidado está no [benchmark.md](benchmark.md),
-com cada número ligado ao plano de onde saiu.
+usam o de execução. Os tempos absolutos dependem do disco da máquina. Os
+resultados consolidados e os gráficos das comparações estão no
+[benchmark.md](benchmark.md).
 
 ## 14. Ordem de execução e entrega
 
