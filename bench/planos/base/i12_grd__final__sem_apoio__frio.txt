@@ -1,0 +1,96 @@
+-- Item 12 · filtro: k=10, YouTube · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_top_k_plataformas_por_streamers_e_canais(10, 1);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |        72.396 |             0.062 |         776 |        655 |    1431  <- mediana
+--     2 |        76.569 |             0.056 |         776 |        655 |    1431
+--     3 |        72.129 |             0.062 |         776 |        655 |    1431
+--     4 |        78.848 |             0.086 |         776 |        655 |    1431
+--     5 |        69.883 |             0.062 |         776 |        655 |    1431
+-- Mediana do tempo: 72.396 ms (repetições em ordem: 69.9, 72.1, 72.4, 76.6, 78.8)
+-- Abaixo, o plano completo da repetição 1 (a mediana).
+
+Function Scan on sp_obter_top_k_plataformas_por_streamers_e_canais  (cost=0.25..10.25 rows=1000 width=109) (actual time=71.324..71.325 rows=1 loops=1)
+  Buffers: shared hit=655 read=776
+Planning Time: 0.062 ms
+Execution Time: 72.396 ms
+
+-- Plano interno da function plpgsql (auto_explain, mesma execução):
+
+NOTICE:  duration: 0.073 ms  plan:
+Query Text: p_nro_plataforma IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM steam_do_bedo.plataforma p WHERE p.nro = p_nro_plataforma)
+Result  (cost=1.35..1.36 rows=1 width=1) (actual time=0.069..0.070 rows=1 loops=1)
+  Buffers: shared read=1
+  InitPlan 1
+    ->  Seq Scan on plataforma p  (cost=0.00..1.35 rows=1 width=0) (actual time=0.068..0.068 rows=1 loops=1)
+          Filter: (nro = 1)
+          Buffers: shared read=1
+NOTICE:  duration: 61.661 ms  plan:
+Query Text: WITH por_plataforma AS (
+        -- uma linha por plataforma, inclusive as sem canal (LEFT JOIN)
+        SELECT p.nro, p.nome, p.qtd_users,
+               count(DISTINCT c.id_streamer)              AS n_streamers,  -- cada streamer conta 1 vez
+               count(c.id_canal)                          AS n_canais,
+               coalesce(sum(c.qtd_visualizacoes), 0)::BIGINT AS n_visualizacoes
+        FROM steam_do_bedo.plataforma p
+        LEFT JOIN steam_do_bedo.canal c ON c.nro_plataforma = p.nro
+        GROUP BY p.nro, p.nome, p.qtd_users
+    ),
+    ranking AS (
+        -- posição global, ANTES do filtro: o filtro não muda a posição
+        SELECT pp.*, rank() OVER (ORDER BY pp.n_streamers DESC, pp.n_canais DESC) AS pos
+        FROM por_plataforma pp
+    )
+    SELECT r.pos, r.nro, r.nome, r.n_streamers, r.n_canais,
+           round(r.n_canais::NUMERIC / nullif(r.n_streamers, 0), 2),
+           r.n_visualizacoes,
+           r.qtd_users,
+           (p_k IS NULL OR r.pos <= p_k)
+    FROM ranking r
+    WHERE (p_nro_plataforma IS NOT NULL AND r.nro = p_nro_plataforma)     -- com filtro: só ela
+       OR (p_nro_plataforma IS NULL AND (p_k IS NULL OR r.pos <= p_k))    -- sem filtro: top-k com empates
+    ORDER BY r.pos, r.nome
+Sort  (cost=4301.70..4301.70 rows=1 width=84) (actual time=61.654..61.657 rows=1 loops=1)
+  Sort Key: r.pos, r.nome
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=10 read=665
+  ->  Subquery Scan on r  (cost=4300.78..4301.69 rows=1 width=84) (actual time=61.589..61.607 rows=1 loops=1)
+        Filter: (r.nro = 1)
+        Rows Removed by Filter: 27
+        Buffers: shared hit=4 read=665
+        ->  WindowAgg  (cost=4300.78..4301.32 rows=28 width=51) (actual time=61.585..61.601 rows=28 loops=1)
+              Buffers: shared hit=4 read=665
+              ->  Sort  (cost=4300.76..4300.83 rows=28 width=43) (actual time=61.579..61.582 rows=28 loops=1)
+                    Sort Key: pp.n_streamers DESC, pp.n_canais DESC
+                    Sort Method: quicksort  Memory: 26kB
+                    Buffers: shared hit=4 read=665
+                    ->  Subquery Scan on pp  (cost=3850.84..4300.09 rows=28 width=43) (actual time=56.889..61.564 rows=28 loops=1)
+                          Buffers: shared hit=4 read=665
+                          ->  GroupAggregate  (cost=3850.84..4300.09 rows=28 width=43) (actual time=56.888..61.559 rows=28 loops=1)
+                                Group Key: p.nro
+                                Buffers: shared hit=4 read=665
+                                ->  Sort  (cost=3850.84..3940.61 rows=35906 width=43) (actual time=55.052..56.893 rows=35906 loops=1)
+                                      Sort Key: p.nro, c.id_streamer
+                                      Sort Method: quicksort  Memory: 3374kB
+                                      Buffers: shared hit=4 read=665
+                                      ->  Hash Right Join  (cost=1.63..1134.21 rows=35906 width=43) (actual time=0.127..18.751 rows=35906 loops=1)
+                                            Hash Cond: (c.nro_plataforma = p.nro)
+                                            Buffers: shared hit=1 read=665
+                                            ->  Seq Scan on canal c  (cost=0.00..1024.06 rows=35906 width=28) (actual time=0.096..10.446 rows=35906 loops=1)
+                                                  Buffers: shared read=665
+                                            ->  Hash  (cost=1.28..1.28 rows=28 width=19) (actual time=0.014..0.015 rows=28 loops=1)
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                                                  Buffers: shared hit=1
+                                                  ->  Seq Scan on plataforma p  (cost=0.00..1.28 rows=28 width=19) (actual time=0.005..0.008 rows=28 loops=1)
+                                                        Buffers: shared hit=1
+NOTICE:  duration: 71.327 ms  plan:
+Query Text: EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM steam_do_bedo.sp_obter_top_k_plataformas_por_streamers_e_canais(10, 1);
+Function Scan on sp_obter_top_k_plataformas_por_streamers_e_canais  (cost=0.25..10.25 rows=1000 width=109) (actual time=71.324..71.325 rows=1 loops=1)
+  Buffers: shared hit=655 read=776

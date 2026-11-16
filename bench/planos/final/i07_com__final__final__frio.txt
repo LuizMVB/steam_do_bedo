@@ -1,0 +1,53 @@
+-- Item 7 · filtro: canal · variante: final
+-- Cenário de índices: final (índices de apoio entregues: idx_inscricao_id_membro, idx_canal_id_streamer, idx_video_id_canal_cobertura)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_com_doacoes_recebidas('Echo.Queen 136733 TV');
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       252.604 |            26.528 |        1839 |       2903 |    4742  <- mediana
+--     2 |       251.785 |            32.837 |        1839 |       2903 |    4742
+--     3 |       236.748 |            23.508 |        1839 |       2903 |    4742
+--     4 |       299.878 |            35.289 |        1839 |       2903 |    4742
+--     5 |       256.462 |            42.725 |        1839 |       2903 |    4742
+-- Mediana do tempo: 252.604 ms (repetições em ordem: 236.7, 251.8, 252.6, 256.5, 299.9)
+-- Abaixo, o plano completo da repetição 1 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=289.89..289.92 rows=2 width=76) (actual time=252.437..252.440 rows=1 loops=1)
+  Buffers: shared hit=2903 read=1839
+  ->  Sort  (cost=289.89..289.90 rows=2 width=74) (actual time=252.435..252.437 rows=1 loops=1)
+        Sort Key: (sum(d.valor)) DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=2903 read=1839
+        ->  GroupAggregate  (cost=289.83..289.88 rows=2 width=74) (actual time=252.358..252.359 rows=1 loops=1)
+              Group Key: v.id_canal, cn.nro_plataforma
+              Buffers: shared hit=2900 read=1839
+              ->  Sort  (cost=289.83..289.84 rows=2 width=40) (actual time=251.978..252.068 rows=1818 loops=1)
+                    Sort Key: v.id_canal, cn.nro_plataforma
+                    Sort Method: quicksort  Memory: 162kB
+                    Buffers: shared hit=2900 read=1839
+                    ->  Nested Loop  (cost=5.78..289.82 rows=2 width=40) (actual time=3.912..251.128 rows=1818 loops=1)
+                          Buffers: shared hit=2894 read=1839
+                          ->  Nested Loop  (cost=5.36..271.21 rows=35 width=50) (actual time=2.908..198.601 rows=1036 loops=1)
+                                Buffers: shared hit=1 read=1015
+                                ->  Index Scan using canal_nome_plataforma_key on canal cn  (cost=0.41..8.43 rows=1 width=34) (actual time=0.872..0.880 rows=1 loops=1)
+                                      Index Cond: ((nome)::text = 'Echo.Queen 136733 TV'::text)
+                                      Buffers: shared read=4
+                                ->  Bitmap Heap Scan on video v  (cost=4.95..262.11 rows=67 width=24) (actual time=2.031..197.200 rows=1036 loops=1)
+                                      Recheck Cond: (id_canal = cn.id_canal)
+                                      Heap Blocks: exact=1005
+                                      Buffers: shared hit=1 read=1011
+                                      ->  Bitmap Index Scan on idx_video_id_canal_cobertura  (cost=0.00..4.93 rows=67 width=0) (actual time=1.480..1.480 rows=1036 loops=1)
+                                            Index Cond: (id_canal = cn.id_canal)
+                                            Buffers: shared hit=1 read=6
+                          ->  Index Scan using doacao_pkey on doacao d  (cost=0.42..0.50 rows=3 width=22) (actual time=0.048..0.049 rows=2 loops=1036)
+                                Index Cond: (id_video = v.id_video)
+                                Filter: ((status)::text <> 'recusado'::text)
+                                Rows Removed by Filter: 0
+                                Buffers: shared hit=2893 read=824
+Planning:
+  Buffers: shared hit=1047 read=149
+Planning Time: 26.528 ms
+Execution Time: 252.604 ms

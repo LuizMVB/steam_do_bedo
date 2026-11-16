@@ -1,0 +1,45 @@
+-- Item 5 · filtro: sem filtro · variante: final
+-- Cenário de índices: final (índices de apoio entregues: idx_inscricao_id_membro, idx_canal_id_streamer, idx_video_id_canal_cobertura)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_patrocinados_com_valores_por_empresa();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |        89.430 |            17.111 |         814 |          6 |     820
+--     2 |        86.820 |             8.253 |         814 |          6 |     820  <- mediana
+--     3 |        92.307 |            10.359 |         814 |          6 |     820
+--     4 |        79.746 |             9.658 |         814 |          6 |     820
+--     5 |        80.630 |             7.412 |         814 |          6 |     820
+-- Mediana do tempo: 86.820 ms (repetições em ordem: 79.7, 80.6, 86.8, 89.4, 92.3)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=3309.41..3356.38 rows=18785 width=100) (actual time=81.636..85.646 rows=18785 loops=1)
+  Buffers: shared hit=6 read=814
+  ->  Sort  (cost=3309.41..3356.38 rows=18785 width=57) (actual time=81.632..82.650 rows=18785 loops=1)
+        Sort Key: p.valor DESC, cn.nome, e.nome
+        Sort Method: quicksort  Memory: 2191kB
+        Buffers: shared hit=6 read=814
+        ->  Hash Join  (cost=1569.38..1975.93 rows=18785 width=57) (actual time=22.526..34.525 rows=18785 loops=1)
+              Hash Cond: (p.id_canal = cn.id_canal)
+              Buffers: shared read=814
+              ->  Hash Join  (cost=96.50..453.73 rows=18785 width=39) (actual time=1.968..9.310 rows=18785 loops=1)
+                    Hash Cond: (p.nro_empresa = e.nro)
+                    Buffers: shared read=149
+                    ->  Seq Scan on patrocinio p  (cost=0.00..307.85 rows=18785 width=17) (actual time=0.088..3.734 rows=18785 loops=1)
+                          Buffers: shared read=120
+                    ->  Hash  (cost=59.00..59.00 rows=3000 width=30) (actual time=1.836..1.837 rows=3000 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 220kB
+                          Buffers: shared read=29
+                          ->  Seq Scan on empresa e  (cost=0.00..59.00 rows=3000 width=30) (actual time=0.078..0.983 rows=3000 loops=1)
+                                Buffers: shared read=29
+              ->  Hash  (cost=1024.06..1024.06 rows=35906 width=34) (actual time=18.015..18.016 rows=35906 loops=1)
+                    Buckets: 65536  Batches: 1  Memory Usage: 2985kB
+                    Buffers: shared read=665
+                    ->  Seq Scan on canal cn  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.138..10.184 rows=35906 loops=1)
+                          Buffers: shared read=665
+Planning:
+  Buffers: shared hit=806 read=107
+Planning Time: 8.253 ms
+Execution Time: 86.820 ms

@@ -1,0 +1,45 @@
+-- Item 2 · filtro: sem filtro · variante: final
+-- Cenário de índices: final (índices de apoio entregues: idx_inscricao_id_membro, idx_canal_id_streamer, idx_video_id_canal_cobertura)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_videos_mais_comentados();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |      8985.946 |            26.211 |       32224 |          6 |   32230  <- mediana
+--     2 |     11438.010 |            19.946 |       32224 |          6 |   32230
+--     3 |      9697.001 |            21.534 |       32224 |          6 |   32230
+--     4 |      8900.078 |            23.097 |       32224 |          6 |   32230
+--     5 |      8767.953 |            23.067 |       32224 |          6 |   32230
+-- Mediana do tempo: 8985.946 ms (repetições em ordem: 8768.0, 8900.1, 8985.9, 9697.0, 11438.0)
+-- Abaixo, o plano completo da repetição 1 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=369642.12..372760.41 rows=1247319 width=92) (actual time=8137.472..8917.964 rows=1247319 loops=1)
+  Buffers: shared hit=6 read=32224, temp read=45655 written=45691
+  ->  Sort  (cost=369642.12..372760.41 rows=1247319 width=85) (actual time=8137.451..8738.447 rows=1247319 loops=1)
+        Sort Key: m.qtd_total DESC, v.titulo
+        Sort Method: external merge  Disk: 108808kB
+        Buffers: shared hit=6 read=32224, temp read=45655 written=45691
+        ->  Hash Join  (cost=60347.56..123970.58 rows=1247319 width=85) (actual time=586.495..2083.933 rows=1247319 loops=1)
+              Hash Cond: (m.id_canal = cn.id_canal)
+              Buffers: shared read=32224, temp read=18462 written=18462
+              ->  Hash Join  (cost=58874.68..119223.09 rows=1247319 width=57) (actual time=562.598..1669.767 rows=1247319 loops=1)
+                    Hash Cond: (m.id_video = v.id_video)
+                    Buffers: shared read=31559, temp read=18462 written=18462
+                    ->  Seq Scan on mv_interacoes_video m  (cost=0.00..24185.19 rows=1247319 width=48) (actual time=0.362..196.939 rows=1247319 loops=1)
+                          Buffers: shared read=11712
+                    ->  Hash  (cost=32320.19..32320.19 rows=1247319 width=41) (actual time=560.963..560.964 rows=1247319 loops=1)
+                          Buckets: 131072  Batches: 16  Memory Usage: 6590kB
+                          Buffers: shared read=19847, temp written=8731
+                          ->  Seq Scan on video v  (cost=0.00..32320.19 rows=1247319 width=41) (actual time=0.327..228.942 rows=1247319 loops=1)
+                                Buffers: shared read=19847
+              ->  Hash  (cost=1024.06..1024.06 rows=35906 width=34) (actual time=23.519..23.519 rows=35906 loops=1)
+                    Buckets: 65536  Batches: 1  Memory Usage: 2985kB
+                    Buffers: shared read=665
+                    ->  Seq Scan on canal cn  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.307..14.556 rows=35906 loops=1)
+                          Buffers: shared read=665
+Planning:
+  Buffers: shared hit=785 read=124 dirtied=2
+Planning Time: 26.211 ms
+Execution Time: 8985.946 ms

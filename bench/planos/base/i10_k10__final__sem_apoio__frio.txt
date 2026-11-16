@@ -1,0 +1,41 @@
+-- Item 10 · filtro: k=10 · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_top_k_canais_por_doacoes_recebidas(10);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |        76.367 |            36.982 |         946 |          6 |     952
+--     2 |        27.787 |            10.502 |         946 |          6 |     952  <- mediana
+--     3 |        21.565 |             7.847 |         946 |          6 |     952
+--     4 |        23.423 |            11.182 |         946 |          6 |     952
+--     5 |        38.479 |             7.844 |         946 |          6 |     952
+-- Mediana do tempo: 27.787 ms (repetições em ordem: 21.6, 23.4, 27.8, 38.5, 76.4)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=1928.32..1928.35 rows=10 width=56) (actual time=27.675..27.683 rows=10 loops=1)
+  Buffers: shared hit=6 read=946
+  ->  Limit  (cost=1928.32..1928.35 rows=10 width=46) (actual time=27.662..27.667 rows=10 loops=1)
+        Buffers: shared hit=6 read=946
+        ->  Sort  (cost=1928.32..1946.32 rows=7198 width=46) (actual time=27.661..27.664 rows=10 loops=1)
+              Sort Key: f.vr_doacoes DESC, c.nome
+              Sort Method: top-N heapsort  Memory: 26kB
+              Buffers: shared hit=6 read=946
+              ->  Hash Join  (cost=654.45..1772.77 rows=7198 width=46) (actual time=7.217..25.755 rows=7198 loops=1)
+                    Hash Cond: (c.id_canal = f.id_canal)
+                    Buffers: shared read=946
+                    ->  Seq Scan on canal c  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.102..12.318 rows=35906 loops=1)
+                          Buffers: shared read=665
+                    ->  Hash  (cost=564.48..564.48 rows=7198 width=28) (actual time=7.053..7.054 rows=7198 loops=1)
+                          Buckets: 8192  Batches: 1  Memory Usage: 514kB
+                          Buffers: shared read=281
+                          ->  Seq Scan on mv_faturamento_canal f  (cost=0.00..564.48 rows=7198 width=28) (actual time=0.161..5.559 rows=7198 loops=1)
+                                Filter: (qtd_doacoes > 0)
+                                Rows Removed by Filter: 15480
+                                Buffers: shared read=281
+Planning:
+  Buffers: shared hit=531 read=86
+Planning Time: 10.502 ms
+Execution Time: 27.787 ms

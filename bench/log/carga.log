@@ -1,0 +1,149 @@
+== ddl
+psql:/workspace/ddl.sql:3: NOTICE:  schema "steam_do_bedo" does not exist, skipping
+== seed
+seed: escala = 1
+Time: 0.081 ms
+Time: 0.314 ms
+Time: 0.188 ms
+Time: 0.090 ms
+Time: 0.054 ms
+Time: 0.098 ms
+Time: 17.922 ms
+Time: 4.837 ms
+Time: 0.816 ms
+ setseed 
+---------
+ 
+(1 row)
+
+Time: 0.577 ms
+Time: 1.924 ms
+Time: 0.230 ms
+Time: 4.525 ms
+Time: 0.639 ms
+Time: 2.319 ms
+Time: 3.732 ms
+Time: 1.427 ms
+Time: 0.653 ms
+Time: 1.688 ms
+Time: 1.180 ms
+Time: 0.722 ms
+Time: 1.435 ms
+Time: 20.030 ms
+Time: 6.219 ms
+Time: 0.754 ms
+Time: 0.797 ms
+Time: 185.976 ms
+Time: 0.837 ms
+Time: 0.388 ms
+Time: 0.804 ms
+Time: 0.314 ms
+Time: 0.171 ms
+Time: 47472.034 ms (00:47.472)
+Time: 459.551 ms
+Time: 14936.192 ms (00:14.936)
+Time: 222.812 ms
+Time: 1628.161 ms (00:01.628)
+Time: 8.354 ms
+Time: 0.981 ms
+Time: 1826.197 ms (00:01.826)
+Time: 651.586 ms
+Time: 82.123 ms
+Time: 127.820 ms
+Time: 0.429 ms
+Time: 19534.268 ms (00:19.534)
+Time: 135.111 ms
+Time: 33.689 ms
+Time: 2287.666 ms (00:02.288)
+Time: 400.373 ms
+Time: 1.953 ms
+Time: 112.061 ms
+Time: 76.632 ms
+Time: 153.294 ms
+Time: 3587.282 ms (00:03.587)
+Time: 984.254 ms
+Time: 150.668 ms
+Time: 1405.340 ms (00:01.405)
+Time: 1.697 ms
+Time: 182.036 ms
+Time: 8040.542 ms (00:08.041)
+Time: 658.678 ms
+Time: 60791.164 ms (01:00.791)
+Time: 865.281 ms
+Time: 167.480 ms
+Time: 12.528 ms
+Time: 7.112 ms
+Time: 9521.989 ms (00:09.522)
+Time: 293.474 ms
+Time: 34.177 ms
+Time: 1693.305 ms (00:01.693)
+Time: 884.941 ms
+Time: 19695.743 ms (00:19.696)
+Time: 355.102 ms
+Time: 29586.055 ms (00:29.586)
+Time: 128.548 ms
+Time: 9697.018 ms (00:09.697)
+Time: 404.329 ms
+Time: 122637.428 ms (02:02.637)
+Time: 848.919 ms
+Time: 7174.554 ms (00:07.175)
+Time: 128.071 ms
+Time: 8311.913 ms (00:08.312)
+Time: 559.757 ms
+Time: 1070.460 ms (00:01.070)
+Time: 321.753 ms
+Time: 544.846 ms
+psql:/workspace/seed.sql:1151: NOTICE:  seed: conferência de sanidade OK (1.91% dos comentários com doação)
+Time: 20823.598 ms (00:20.824)
+Time: 954.250 ms
+      tabela       | tuplas  
+-------------------+---------
+ Conversao         |     154
+ Pais              |     199
+ Empresa           |    3000
+ EmpresaPais       |    3471
+ Plataforma        |      28
+ Usuario           |  500000
+ PlataformaUsuario |  856263
+ StreamerPais      |   26081
+ Canal             |   35906
+ NivelCanal        |   98855
+ Inscricao         |  598075
+ Patrocinio        |   18785
+ Video             | 1247319
+ Participa         |   94416
+ Comentario        | 5000380
+ Doacao            |  100113
+ BitCoin           |    9623
+ PayPal            |   21730
+ CartaoCredito     |   23880
+ MecanismoPlat     |   44880
+(20 rows)
+
+== views
+psql:/workspace/views.sql:36: NOTICE:  materialized view "mv_faturamento_canal" does not exist, skipping
+psql:/workspace/views.sql:37: NOTICE:  materialized view "mv_interacoes_video" does not exist, skipping
+psql:/workspace/views.sql:38: NOTICE:  view "vw_inscricao_usd" does not exist, skipping
+psql:/workspace/views.sql:39: NOTICE:  view "vw_doacao_recebida" does not exist, skipping
+== functions
+psql:/workspace/functions.sql:46: NOTICE:  function steam_do_bedo.sp_obter_streamers_com_maior_qtd_videos_publicados(pg_catalog.int8) does not exist, skipping
+psql:/workspace/functions.sql:47: NOTICE:  function steam_do_bedo.sp_obter_streamers_com_maior_qtd_videos_publicados(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:78: NOTICE:  function steam_do_bedo.sp_obter_videos_mais_comentados(pg_catalog.varchar) does not exist, skipping
+psql:/workspace/functions.sql:118: NOTICE:  function steam_do_bedo.sp_obter_canais_por_qtd_total_interacoes(pg_catalog.varchar) does not exist, skipping
+psql:/workspace/functions.sql:164: NOTICE:  function steam_do_bedo.sp_obter_canais_pela_media_doacoes_por_comentario(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:200: NOTICE:  function steam_do_bedo.sp_obter_canais_patrocinados_com_valores_por_empresa(pg_catalog.varchar) does not exist, skipping
+psql:/workspace/functions.sql:227: NOTICE:  function steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario(pg_catalog.varchar) does not exist, skipping
+psql:/workspace/functions.sql:228: NOTICE:  function steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario(pg_catalog.varchar,date) does not exist, skipping
+psql:/workspace/functions.sql:258: NOTICE:  function steam_do_bedo.sp_obter_canais_com_doacoes_recebidas(pg_catalog.varchar) does not exist, skipping
+psql:/workspace/functions.sql:279: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_patrocinio(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:301: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_aportes_de_membros(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:302: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_aportes_de_membros(pg_catalog.int4,date) does not exist, skipping
+psql:/workspace/functions.sql:325: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_doacoes_recebidas(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:349: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_faturamento(pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:350: NOTICE:  function steam_do_bedo.sp_obter_top_k_canais_por_faturamento(pg_catalog.int4,date) does not exist, skipping
+psql:/workspace/functions.sql:411: NOTICE:  function steam_do_bedo.sp_obter_top_k_plataformas_por_streamers_e_canais(pg_catalog.int4,pg_catalog.int4) does not exist, skipping
+psql:/workspace/functions.sql:505: NOTICE:  index "idx_inscricao_id_membro" does not exist, skipping
+psql:/workspace/functions.sql:506: NOTICE:  index "idx_canal_id_streamer" does not exist, skipping
+psql:/workspace/functions.sql:507: NOTICE:  index "idx_canal_nro_plataforma" does not exist, skipping
+psql:/workspace/functions.sql:508: NOTICE:  index "idx_video_id_canal_cobertura" does not exist, skipping
+( for f in ddl seed views functions; do; echo "== $f"; docker exec  psql -U  )  0.10s user 0.17s system 0% cpu 7:07.90 total

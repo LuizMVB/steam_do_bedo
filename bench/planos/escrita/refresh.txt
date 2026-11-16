@@ -1,0 +1,10 @@
+-- REFRESH não aceita EXPLAIN. Cada tempo foi medido dentro do servidor:
+--   DO $$ DECLARE t0 timestamptz := clock_timestamp(); BEGIN
+--       REFRESH MATERIALIZED VIEW [CONCURRENTLY] <view>;
+--       RAISE NOTICE 'ms=%', <clock_timestamp() - t0 em ms>; END $$;
+-- 3 rodadas por linha, a quente; o valor usado é a mediana.
+
+REFRESH MATERIALIZED VIEW steam_do_bedo.mv_interacoes_video  (1247319 linhas): 16487.4, 12442.1, 11250.1 ms -> mediana 12442.1 ms
+REFRESH MATERIALIZED VIEW CONCURRENTLY steam_do_bedo.mv_interacoes_video  (1247319 linhas): 22893.3, 28757.8, 27000.1 ms -> mediana 27000.1 ms
+REFRESH MATERIALIZED VIEW steam_do_bedo.mv_faturamento_canal  (22678 linhas): 1419.8, 1389.9, 1053.7 ms -> mediana 1389.9 ms
+REFRESH MATERIALIZED VIEW CONCURRENTLY steam_do_bedo.mv_faturamento_canal  (22678 linhas): 1037.6, 1509.7, 1598.8 ms -> mediana 1509.7 ms

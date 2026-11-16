@@ -1,0 +1,62 @@
+-- Item 6 · filtro: usuario · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario('ghost.yt_297686');
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |        93.598 |             2.306 |           0 |       4135 |    4135
+--     2 |       170.113 |            13.709 |           0 |       4135 |    4135
+--     3 |       185.118 |            11.408 |           0 |       4135 |    4135  <- mediana
+--     4 |       222.592 |            19.264 |           0 |       4135 |    4135
+--     5 |       244.114 |             7.965 |           0 |       4135 |    4135
+-- Mediana do tempo: 185.118 ms (repetições em ordem: 93.6, 170.1, 185.1, 222.6, 244.1)
+-- Abaixo, o plano completo da repetição 3 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=11573.61..11573.62 rows=1 width=136) (actual time=184.545..184.577 rows=1 loops=1)
+  Buffers: shared hit=4135
+  ->  Sort  (cost=11573.61..11573.61 rows=1 width=100) (actual time=184.542..184.550 rows=1 loops=1)
+        Sort Key: (round(sum((n.valor * cv.fator_conver)), 2)) DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=4135
+        ->  GroupAggregate  (cost=11573.56..11573.60 rows=1 width=100) (actual time=184.345..184.352 rows=1 loops=1)
+              Group Key: i.id_membro, p.moeda
+              Buffers: shared hit=4132
+              ->  Sort  (cost=11573.56..11573.57 rows=1 width=40) (actual time=183.892..183.901 rows=15 loops=1)
+                    Sort Key: i.id_membro, p.moeda
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=4132
+                    ->  Nested Loop  (cost=8.87..11573.55 rows=1 width=40) (actual time=15.183..183.569 rows=15 loops=1)
+                          Join Filter: ((cv.moeda)::text = (p.moeda)::text)
+                          Rows Removed by Join Filter: 1200
+                          Buffers: shared hit=4126
+                          ->  Nested Loop  (cost=8.87..11568.09 rows=1 width=35) (actual time=15.062..183.068 rows=15 loops=1)
+                                Join Filter: ((p.ddi)::text = (u.pais_residencia)::text)
+                                Rows Removed by Join Filter: 2550
+                                Buffers: shared hit=4096
+                                ->  Nested Loop  (cost=8.87..11561.61 rows=1 width=34) (actual time=14.983..181.287 rows=15 loops=1)
+                                      Buffers: shared hit=4066
+                                      ->  Hash Join  (cost=8.45..11561.16 rows=1 width=41) (actual time=13.767..178.462 rows=15 loops=1)
+                                            Hash Cond: (i.id_membro = u.id_usuario)
+                                            Buffers: shared hit=4006
+                                            ->  Seq Scan on inscricao i  (cost=0.00..9982.75 rows=598075 width=22) (actual time=0.023..87.677 rows=598075 loops=1)
+                                                  Buffers: shared hit=4002
+                                            ->  Hash  (cost=8.44..8.44 rows=1 width=27) (actual time=0.150..0.152 rows=1 loops=1)
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                  Buffers: shared hit=4
+                                                  ->  Index Scan using usuario_nick_key on usuario u  (cost=0.42..8.44 rows=1 width=27) (actual time=0.083..0.087 rows=1 loops=1)
+                                                        Index Cond: ((nick)::text = 'ghost.yt_297686'::text)
+                                                        Buffers: shared hit=4
+                                      ->  Index Scan using nivelcanal_pkey on nivelcanal n  (cost=0.42..0.45 rows=1 width=22) (actual time=0.169..0.169 rows=1 loops=15)
+                                            Index Cond: ((id_canal = i.id_canal) AND ((nivel)::text = (i.nivel)::text))
+                                            Buffers: shared hit=60
+                                ->  Seq Scan on pais p  (cost=0.00..3.99 rows=199 width=7) (actual time=0.010..0.025 rows=171 loops=15)
+                                      Buffers: shared hit=30
+                          ->  Seq Scan on conversao cv  (cost=0.00..3.54 rows=154 width=9) (actual time=0.009..0.016 rows=81 loops=15)
+                                Buffers: shared hit=30
+Planning:
+  Buffers: shared hit=1080
+Planning Time: 11.408 ms
+Execution Time: 185.118 ms

@@ -1,0 +1,74 @@
+-- Item 2 · filtro: sem filtro · variante: original
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bench.item2_original();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |     20949.334 |            22.128 |      138505 |        412 |  138917
+--     2 |     12613.697 |            70.483 |      138505 |        412 |  138917
+--     3 |      8435.329 |            30.025 |      138505 |        412 |  138917  <- mediana
+--     4 |      8185.140 |            24.124 |      138505 |        412 |  138917
+--     5 |      7887.667 |            22.462 |      138505 |        412 |  138917
+-- Mediana do tempo: 8435.329 ms (repetições em ordem: 7887.7, 8185.1, 8435.3, 12613.7, 20949.3)
+-- Abaixo, o plano completo da repetição 3 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=803555.06..819146.54 rows=1247319 width=88) (actual time=7982.877..8318.968 rows=1247319 loops=1)
+  Buffers: shared hit=412 read=138505, temp read=70615 written=97699
+  ->  Sort  (cost=803555.06..806673.35 rows=1247319 width=83) (actual time=7982.864..8143.030 rows=1247319 loops=1)
+        Sort Key: ((COALESCE(sum((c.qtd_online + c.qtd_offline)), '0'::numeric))::bigint) DESC
+        Sort Method: external merge  Disk: 123376kB
+        Buffers: shared hit=412 read=138505, temp read=70615 written=97699
+        ->  HashAggregate  (cost=495030.33..557883.52 rows=1247319 width=83) (actual time=6401.056..7361.304 rows=1247319 loops=1)
+              Group Key: cn.nome, cn.nro_plataforma, v.titulo, v.datah
+              Planned Partitions: 128  Batches: 129  Memory Usage: 8209kB  Disk Usage: 122816kB
+              Buffers: shared hit=409 read=138505, temp read=39780 written=66824
+              ->  Hash Join  (cost=252707.80..318456.74 rows=1247319 width=75) (actual time=3923.544..5598.356 rows=1335950 loops=1)
+                    Hash Cond: (v.id_canal = cn.id_canal)
+                    Buffers: shared hit=409 read=138505, temp read=24967 written=36861
+                    ->  Merge Left Join  (cost=251234.92..313709.25 rows=1247319 width=57) (actual time=3902.088..5090.163 rows=1335950 loops=1)
+                          Merge Cond: (v.id_video = c.id_video)
+                          Buffers: shared hit=409 read=137840, temp read=24967 written=36861
+                          ->  Index Scan using video_pkey on video v  (cost=0.43..57776.21 rows=1247319 width=57) (actual time=2.562..571.211 rows=1247319 loops=1)
+                                Buffers: shared hit=377 read=24628
+                          ->  Materialize  (cost=251234.49..251685.99 rows=90300 width=32) (actual time=3899.488..4150.415 rows=687476 loops=1)
+                                Buffers: shared hit=32 read=113212, temp read=24967 written=36861
+                                ->  Sort  (cost=251234.49..251460.24 rows=90300 width=32) (actual time=3899.464..4042.703 rows=687476 loops=1)
+                                      Sort Key: c.id_video
+                                      Sort Method: external merge  Disk: 28344kB
+                                      Buffers: shared hit=32 read=113212, temp read=24967 written=36861
+                                      ->  Subquery Scan on c  (cost=112408.27..241638.70 rows=90300 width=32) (actual time=894.537..3582.157 rows=687476 loops=1)
+                                            Buffers: shared hit=32 read=113212, temp read=21424 written=33306
+                                            ->  Append  (cost=112408.27..240735.70 rows=90300 width=32) (actual time=894.536..3499.242 rows=687476 loops=1)
+                                                  Buffers: shared hit=32 read=113212, temp read=21424 written=33306
+                                                  ->  Subquery Scan on "*SELECT* 1"  (cost=112408.27..113424.15 rows=45150 width=32) (actual time=894.527..937.945 rows=88631 loops=1)
+                                                        Buffers: shared read=56622, temp read=524 written=1101
+                                                        ->  HashAggregate  (cost=112408.27..112859.77 rows=45150 width=28) (actual time=894.525..927.131 rows=88631 loops=1)
+                                                              Group Key: comentario.id_video
+                                                              Batches: 5  Memory Usage: 8241kB  Disk Usage: 5944kB
+                                                              Buffers: shared read=56622, temp read=524 written=1101
+                                                              ->  Seq Scan on comentario  (cost=0.00..106625.38 rows=1156578 width=16) (actual time=0.303..651.592 rows=1135193 loops=1)
+                                                                    Filter: coment_on
+                                                                    Rows Removed by Filter: 3865187
+                                                                    Buffers: shared read=56622
+                                                  ->  Subquery Scan on "*SELECT* 2"  (cost=125844.18..126860.05 rows=45150 width=32) (actual time=1613.221..2495.875 rows=598845 loops=1)
+                                                        Buffers: shared hit=32 read=56590, temp read=20900 written=32205
+                                                        ->  HashAggregate  (cost=125844.18..126295.68 rows=45150 width=28) (actual time=1613.206..2421.789 rows=598845 loops=1)
+                                                              Group Key: comentario_1.id_video
+                                                              Batches: 21  Memory Usage: 8249kB  Disk Usage: 120624kB
+                                                              Buffers: shared hit=32 read=56590, temp read=20900 written=32205
+                                                              ->  Seq Scan on comentario comentario_1  (cost=0.00..106625.38 rows=3843760 width=16) (actual time=0.111..532.212 rows=3865187 loops=1)
+                                                                    Filter: (NOT coment_on)
+                                                                    Rows Removed by Filter: 1135193
+                                                                    Buffers: shared hit=32 read=56590
+                    ->  Hash  (cost=1024.06..1024.06 rows=35906 width=34) (actual time=20.847..20.858 rows=35906 loops=1)
+                          Buckets: 65536  Batches: 1  Memory Usage: 2985kB
+                          Buffers: shared read=665
+                          ->  Seq Scan on canal cn  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.356..12.605 rows=35906 loops=1)
+                                Buffers: shared read=665
+Planning:
+  Buffers: shared hit=977 read=132
+Planning Time: 30.025 ms
+Execution Time: 8435.329 ms

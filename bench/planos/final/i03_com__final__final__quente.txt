@@ -1,0 +1,48 @@
+-- Item 3 · filtro: streamer · variante: final
+-- Cenário de índices: final (índices de apoio entregues: idx_inscricao_id_membro, idx_canal_id_streamer, idx_video_id_canal_cobertura)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_por_qtd_total_interacoes('echo.queen_136733');
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |         1.610 |             2.380 |           0 |       1027 |    1027
+--     2 |         1.774 |             1.893 |           0 |       1027 |    1027  <- mediana
+--     3 |         1.611 |             1.915 |           0 |       1027 |    1027
+--     4 |         2.694 |             4.630 |           0 |       1027 |    1027
+--     5 |         2.827 |             3.451 |           0 |       1027 |    1027
+-- Mediana do tempo: 1.774 ms (repetições em ordem: 1.6, 1.6, 1.8, 2.7, 2.8)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=279.41..279.42 rows=1 width=116) (actual time=1.721..1.723 rows=2 loops=1)
+  Buffers: shared hit=1027
+  ->  Sort  (cost=279.41..279.42 rows=1 width=106) (actual time=1.719..1.720 rows=2 loops=1)
+        Sort Key: ((COALESCE((sum(m.qtd_total)), '0'::numeric))::bigint) DESC, cn.nome
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=1027
+        ->  Result  (cost=263.32..279.40 rows=1 width=106) (actual time=1.642..1.684 rows=2 loops=1)
+              Buffers: shared hit=1021
+              ->  Nested Loop  (cost=263.32..279.39 rows=1 width=90) (actual time=1.641..1.682 rows=2 loops=1)
+                    Buffers: shared hit=1021
+                    ->  Nested Loop  (cost=0.71..16.76 rows=1 width=50) (actual time=0.024..0.027 rows=2 loops=1)
+                          Buffers: shared hit=7
+                          ->  Index Scan using usuario_nick_key on usuario u  (cost=0.42..8.44 rows=1 width=24) (actual time=0.017..0.017 rows=1 loops=1)
+                                Index Cond: ((nick)::text = 'echo.queen_136733'::text)
+                                Buffers: shared hit=4
+                          ->  Index Scan using idx_canal_id_streamer on canal cn  (cost=0.29..8.31 rows=1 width=42) (actual time=0.005..0.007 rows=2 loops=1)
+                                Index Cond: (id_streamer = u.id_usuario)
+                                Buffers: shared hit=3
+                    ->  Aggregate  (cost=262.60..262.61 rows=1 width=40) (actual time=0.821..0.821 rows=1 loops=2)
+                          Buffers: shared hit=1014
+                          ->  Bitmap Heap Scan on mv_interacoes_video m  (cost=4.95..262.26 rows=68 width=8) (actual time=0.143..0.751 rows=522 loops=2)
+                                Recheck Cond: (id_canal = cn.id_canal)
+                                Heap Blocks: exact=1002
+                                Buffers: shared hit=1014
+                                ->  Bitmap Index Scan on ux_mv_interacoes_video  (cost=0.00..4.94 rows=68 width=0) (actual time=0.077..0.077 rows=522 loops=2)
+                                      Index Cond: (id_canal = cn.id_canal)
+                                      Buffers: shared hit=12
+Planning:
+  Buffers: shared hit=910
+Planning Time: 1.893 ms
+Execution Time: 1.774 ms

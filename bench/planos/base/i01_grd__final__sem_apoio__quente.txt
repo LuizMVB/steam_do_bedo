@@ -1,0 +1,53 @@
+-- Item 1 · filtro: YouTube · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_streamers_com_maior_qtd_videos_publicados(1);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       614.769 |             2.086 |       27806 |        799 |   28605
+--     2 |       530.772 |             1.336 |       27742 |        863 |   28605  <- mediana
+--     3 |       483.627 |             6.251 |       27678 |        927 |   28605
+--     4 |       632.487 |             6.335 |       27614 |        991 |   28605
+--     5 |       472.487 |             1.524 |       27550 |       1055 |   28605
+-- Mediana do tempo: 530.772 ms (repetições em ordem: 472.5, 483.6, 530.8, 614.8, 632.5)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=54816.05..54839.38 rows=9334 width=48) (actual time=527.905..529.808 rows=10092 loops=1)
+  Buffers: shared hit=863 read=27742
+  ->  Sort  (cost=54816.05..54839.38 rows=9334 width=32) (actual time=527.901..528.505 rows=10092 loops=1)
+        Sort Key: a.qtd DESC, u.nick
+        Sort Method: quicksort  Memory: 888kB
+        Buffers: shared hit=863 read=27742
+        ->  Hash Join  (cost=39801.04..54200.55 rows=9334 width=32) (actual time=392.318..503.060 rows=10092 loops=1)
+              Hash Cond: (u.id_usuario = a.id_streamer)
+              Buffers: shared hit=857 read=27742
+              ->  Seq Scan on usuario u  (cost=0.00..13087.00 rows=500000 width=24) (actual time=0.051..54.679 rows=500000 loops=1)
+                    Buffers: shared hit=96 read=7991
+              ->  Hash  (cost=39684.36..39684.36 rows=9334 width=24) (actual time=392.155..392.167 rows=10092 loops=1)
+                    Buckets: 16384  Batches: 1  Memory Usage: 680kB
+                    Buffers: shared hit=761 read=19751
+                    ->  Subquery Scan on a  (cost=39451.01..39684.36 rows=9334 width=24) (actual time=381.061..384.750 rows=10092 loops=1)
+                          Buffers: shared hit=761 read=19751
+                          ->  HashAggregate  (cost=39451.01..39591.02 rows=9334 width=24) (actual time=381.060..383.566 rows=10092 loops=1)
+                                Group Key: c.id_streamer
+                                Batches: 1  Memory Usage: 1937kB
+                                Buffers: shared hit=761 read=19751
+                                ->  Hash Join  (cost=1239.38..36834.17 rows=348913 width=16) (actual time=4.882..316.645 rows=209599 loops=1)
+                                      Hash Cond: (v.id_canal = c.id_canal)
+                                      Buffers: shared hit=761 read=19751
+                                      ->  Seq Scan on video v  (cost=0.00..32320.19 rows=1247319 width=16) (actual time=0.012..123.422 rows=1247319 loops=1)
+                                            Buffers: shared hit=96 read=19751
+                                      ->  Hash  (cost=1113.83..1113.83 rows=10044 width=16) (actual time=4.842..4.848 rows=10092 loops=1)
+                                            Buckets: 16384  Batches: 1  Memory Usage: 602kB
+                                            Buffers: shared hit=665
+                                            ->  Seq Scan on canal c  (cost=0.00..1113.83 rows=10044 width=16) (actual time=0.005..3.420 rows=10092 loops=1)
+                                                  Filter: (nro_plataforma = 1)
+                                                  Rows Removed by Filter: 25814
+                                                  Buffers: shared hit=665
+Planning:
+  Buffers: shared hit=668
+Planning Time: 1.336 ms
+Execution Time: 530.772 ms

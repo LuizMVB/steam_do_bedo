@@ -1,0 +1,65 @@
+-- Item 6 · filtro: sem filtro · variante: final
+-- Cenário de índices: final (índices de apoio entregues: idx_inscricao_id_membro, idx_canal_id_streamer, idx_video_id_canal_cobertura)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |      3338.386 |            12.405 |        8023 |       5395 |   13418
+--     2 |      3051.017 |             3.779 |        7991 |       5427 |   13418
+--     3 |      3055.259 |             3.793 |        7959 |       5459 |   13418  <- mediana
+--     4 |      2981.190 |             3.871 |        7927 |       5491 |   13418
+--     5 |      3262.750 |             5.254 |        7895 |       5523 |   13418
+-- Mediana do tempo: 3055.259 ms (repetições em ordem: 2981.2, 3051.0, 3055.3, 3262.8, 3338.4)
+-- Abaixo, o plano completo da repetição 3 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=256145.41..263621.35 rows=598075 width=136) (actual time=2667.957..3031.811 rows=320684 loops=1)
+  Buffers: shared hit=5459 read=7959, temp read=12057 written=19543
+  ->  Sort  (cost=256145.41..257640.60 rows=598075 width=100) (actual time=2667.950..2985.577 rows=320684 loops=1)
+        Sort Key: (round(sum((n.valor * cv.fator_conver)), 2)) DESC, u.nick
+        Sort Method: external merge  Disk: 20592kB
+        Buffers: shared hit=5459 read=7959, temp read=12057 written=19543
+        ->  HashAggregate  (cost=113533.98..133345.21 rows=598075 width=100) (actual time=1509.227..1928.790 rows=320684 loops=1)
+              Group Key: i.id_membro, u.nick, p.moeda
+              Planned Partitions: 64  Batches: 65  Memory Usage: 8337kB  Disk Usage: 61032kB
+              Buffers: shared hit=5453 read=7959, temp read=9483 written=16962
+              ->  Hash Join  (cost=26557.32..53726.48 rows=598075 width=40) (actual time=260.561..1149.216 rows=598075 loops=1)
+                    Hash Cond: ((p.moeda)::text = (cv.moeda)::text)
+                    Buffers: shared hit=5453 read=7959, temp read=4920 written=4920
+                    ->  Hash Join  (cost=26551.85..52107.86 rows=598075 width=35) (actual time=260.472..1028.087 rows=598075 loops=1)
+                          Hash Cond: ((u.pais_residencia)::text = (p.ddi)::text)
+                          Buffers: shared hit=5451 read=7959, temp read=4920 written=4920
+                          ->  Hash Join  (cost=26545.38..50498.00 rows=598075 width=34) (actual time=260.366..894.454 rows=598075 loops=1)
+                                Hash Cond: (i.id_membro = u.id_usuario)
+                                Buffers: shared hit=5449 read=7959, temp read=4920 written=4920
+                                ->  Hash Join  (cost=3790.38..16913.04 rows=598075 width=15) (actual time=46.090..296.621 rows=598075 loops=1)
+                                      Hash Cond: ((i.id_canal = n.id_canal) AND ((i.nivel)::text = (n.nivel)::text))
+                                      Buffers: shared hit=5321
+                                      ->  Seq Scan on inscricao i  (cost=0.00..9982.75 rows=598075 width=22) (actual time=0.003..51.254 rows=598075 loops=1)
+                                            Buffers: shared hit=4002
+                                      ->  Hash  (cost=2307.55..2307.55 rows=98855 width=22) (actual time=45.525..45.530 rows=98855 loops=1)
+                                            Buckets: 131072  Batches: 1  Memory Usage: 6353kB
+                                            Buffers: shared hit=1319
+                                            ->  Seq Scan on nivelcanal n  (cost=0.00..2307.55 rows=98855 width=22) (actual time=0.009..16.128 rows=98855 loops=1)
+                                                  Buffers: shared hit=1319
+                                ->  Hash  (cost=13087.00..13087.00 rows=500000 width=27) (actual time=213.344..213.345 rows=500000 loops=1)
+                                      Buckets: 131072  Batches: 8  Memory Usage: 4814kB
+                                      Buffers: shared hit=128 read=7959, temp written=2674
+                                      ->  Seq Scan on usuario u  (cost=0.00..13087.00 rows=500000 width=27) (actual time=0.101..92.922 rows=500000 loops=1)
+                                            Buffers: shared hit=128 read=7959
+                          ->  Hash  (cost=3.99..3.99 rows=199 width=7) (actual time=0.069..0.070 rows=199 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 16kB
+                                Buffers: shared hit=2
+                                ->  Seq Scan on pais p  (cost=0.00..3.99 rows=199 width=7) (actual time=0.004..0.024 rows=199 loops=1)
+                                      Buffers: shared hit=2
+                    ->  Hash  (cost=3.54..3.54 rows=154 width=9) (actual time=0.069..0.069 rows=154 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 15kB
+                          Buffers: shared hit=2
+                          ->  Seq Scan on conversao cv  (cost=0.00..3.54 rows=154 width=9) (actual time=0.010..0.035 rows=154 loops=1)
+                                Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=1100
+Planning Time: 3.793 ms
+Execution Time: 3055.259 ms

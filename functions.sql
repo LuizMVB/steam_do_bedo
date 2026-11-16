@@ -491,7 +491,8 @@ $$;
 -- das functions -> distribuição de cada coluna em
 -- pg_stats -> tipo do índice pelo tipo do predicado -> medida a frio com
 -- e sem o índice e do overhead de inserção. Os números estão no
--- benchmark.md e no decisoes_detalhamento.md.
+-- benchmark.md e no decisoes_detalhamento.md; o EXPLAIN ANALYZE de cada
+-- medida está em bench/planos/.
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -514,13 +515,16 @@ DROP INDEX IF EXISTS steam_do_bedo.idx_video_id_canal_cobertura;
 --   inscricao_id_membro_fkey quando um Usuario é removido.
 -- Substitui idx_inscricao_nick_membro, de uma versão anterior: a chave
 --   do membro agora é id_usuario.
--- Medido (a frio, mediana de 5): item 6 com filtro 160 -> 7 ms; páginas
---   lidas 4.040 -> 54. Overhead de INSERT em lote: +59% (300 mil linhas,
---   ordem aleatória); 10 MB na tabela inteira.
+-- Medido (a frio, mediana de 5): item 6 com filtro 155 -> 4,5 ms; páginas
+--   lidas 4.135 -> 123 (do disco: 4.040 -> 54). Overhead de INSERT em
+--   lote: +63% (300 mil linhas, ordem aleatória); 10 MB na tabela inteira.
 -- Hash x B-tree: o predicado é só de igualdade, então o hash foi medido.
---   Leu as mesmas 54 páginas, ficou maior (10,6 MB contra 8,7 MB no lote
---   de 300 mil) e não inseriu mais rápido. Fica o B-tree, que também
---   entrega em ordem e serve à verificação de FK.
+--   Leu as mesmas páginas, no mesmo tempo, e ficou maior (10,1 MB contra
+--   8,4 MB no lote de 300 mil). Neste lote inseriu mais rápido (+27%
+--   contra +63%), mas em Canal foi mais lento, e as rodadas variam muito.
+--   Fica o B-tree, que lê o mesmo, ocupa menos e também entrega em ordem.
+-- Planos: bench/planos/base/i06_com__final__sem_apoio__frio.txt e
+--   bench/planos/final/i06_com__final__final__frio.txt (benchmark.md).
 -- Cuidado: inscrição é escrita rara (o usuário assina um canal de vez em
 --   quando) e a busca por usuário é leitura frequente.
 -- ---------------------------------------------------------------------
@@ -534,9 +538,9 @@ CREATE INDEX idx_inscricao_id_membro
 --   atende as verificações dos triggers T9 e T10 do lado de StreamerPais e
 --   PlataformaUsuario ("este usuário tem canal?") e a FK
 --   canal_id_streamer_fkey. Igualdade, poucos canais por streamer.
--- Medido: item 3 com filtro, páginas lidas 1.554 -> 892; a quente 9 -> 1,3
---   ms (a frio a diferença some no ruído, ~150 ms nos dois). 736 kB.
---   Overhead de INSERT: +17% numa tabela de escrita rara.
+-- Medido: item 3 com filtro, páginas lidas 1.689 -> 1.027; a quente 11 ->
+--   1,8 ms (a frio a diferença some no ruído, ~220 ms nos dois). 736 kB.
+--   Overhead de INSERT: +18% numa tabela de escrita rara.
 -- Hash x B-tree: mesmas páginas lidas, mesmo tempo, hash maior: B-tree.
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_canal_id_streamer
@@ -550,12 +554,12 @@ CREATE INDEX idx_canal_id_streamer
 --   filtro de plataforma, mesmo poucos canais faziam o plano varrer Video
 --   inteira (155 MB): video_canal_titulo_datah_key começa por id_canal, mas
 --   não tem visu_total, e os vídeos de um canal estão espalhados pela
---   tabela (correlação física de id_canal = 0,01, porque a ordem física é a
---   do UUID, e não a do canal). Com o INCLUDE, a contagem e a soma saem
+--   tabela (correlação física de id_canal = 0,001, porque a ordem física é
+--   a do UUID, e não a do canal). Com o INCLUDE, a contagem e a soma saem
 --   só do índice (Index Only Scan), sem visitar a tabela.
--- Medido: item 1 com plataforma pequena (Kick, 3,5% dos canais): 587 ->
---   341 ms a frio e 257 -> 22 ms a quente; páginas 25.526 -> 9.530.
---   38 MB; overhead de INSERT em Video +9%.
+-- Medido: item 1 com plataforma pequena (Kick, 3,5% dos canais): 749 ->
+--   444 ms a frio e 261 -> 21 ms a quente; páginas 25.526 -> 9.530.
+--   38 MB; overhead de INSERT em Video +7%.
 -- Cuidado:
 --   * Sem filtro ou com plataforma grande (YouTube, 28% dos canais) o
 --     planejador continua varrendo a tabela: o predicado é concentrado
@@ -564,7 +568,7 @@ CREATE INDEX idx_canal_id_streamer
 --   * Index-only scan depende do visibility map: precisa de VACUUM em dia
 --     numa tabela com inserção contínua.
 --   * Substitui Canal (nro_plataforma), de uma versão anterior, que foi medido de novo e
---     não teve ganho: Canal tem 951 páginas e é lida em milissegundos; o
+--     não teve ganho: Canal tem 665 páginas e é lida em milissegundos; o
 --     custo dos itens 1, 4 e 12 estava em Video.
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_video_id_canal_cobertura

@@ -1,0 +1,53 @@
+-- Item 3 · filtro: sem filtro · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_por_qtd_total_interacoes();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       878.186 |             2.877 |       19670 |        800 |   20470
+--     2 |       840.008 |             2.466 |       19606 |        864 |   20470
+--     3 |      1035.110 |             3.276 |       19542 |        928 |   20470
+--     4 |       895.918 |             3.712 |       19478 |        992 |   20470  <- mediana
+--     5 |       994.082 |             5.591 |       19414 |       1056 |   20470
+-- Mediana do tempo: 895.918 ms (repetições em ordem: 840.0, 878.2, 895.9, 994.1, 1035.1)
+-- Abaixo, o plano completo da repetição 4 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=59805.96..59895.72 rows=35906 width=116) (actual time=867.823..891.221 rows=35906 loops=1)
+  Buffers: shared hit=992 read=19478
+  ->  Sort  (cost=59805.96..59895.72 rows=35906 width=106) (actual time=867.811..878.246 rows=35906 loops=1)
+        Sort Key: ((COALESCE(a.tot, '0'::numeric))::bigint) DESC, cn.nome
+        Sort Method: quicksort  Memory: 3910kB
+        Buffers: shared hit=992 read=19478
+        ->  Result  (cost=35651.61..54999.82 rows=35906 width=106) (actual time=502.554..764.344 rows=35906 loops=1)
+              Buffers: shared hit=986 read=19478
+              ->  Hash Left Join  (cost=35651.61..54640.76 rows=35906 width=90) (actual time=502.552..759.423 rows=35906 loops=1)
+                    Hash Cond: (cn.id_canal = a.id_canal)
+                    Buffers: shared hit=986 read=19478
+                    ->  Hash Join  (cost=1472.88..19918.94 rows=35906 width=50) (actual time=17.414..241.586 rows=35906 loops=1)
+                          Hash Cond: (u.id_usuario = cn.id_streamer)
+                          Buffers: shared hit=825 read=7927
+                          ->  Seq Scan on usuario u  (cost=0.00..13087.00 rows=500000 width=24) (actual time=0.074..107.205 rows=500000 loops=1)
+                                Buffers: shared hit=160 read=7927
+                          ->  Hash  (cost=1024.06..1024.06 rows=35906 width=42) (actual time=17.027..17.037 rows=35906 loops=1)
+                                Buckets: 65536  Batches: 1  Memory Usage: 3265kB
+                                Buffers: shared hit=665
+                                ->  Seq Scan on canal cn  (cost=0.00..1024.06 rows=35906 width=42) (actual time=0.017..7.618 rows=35906 loops=1)
+                                      Buffers: shared hit=665
+                    ->  Hash  (cost=33950.64..33950.64 rows=18247 width=48) (actual time=484.942..484.944 rows=35906 loops=1)
+                          Buckets: 65536 (originally 32768)  Batches: 1 (originally 1)  Memory Usage: 2476kB
+                          Buffers: shared hit=161 read=11551
+                          ->  Subquery Scan on a  (cost=33540.08..33950.64 rows=18247 width=48) (actual time=464.468..477.294 rows=35906 loops=1)
+                                Buffers: shared hit=161 read=11551
+                                ->  HashAggregate  (cost=33540.08..33768.17 rows=18247 width=48) (actual time=464.467..473.099 rows=35906 loops=1)
+                                      Group Key: mv_interacoes_video.id_canal
+                                      Batches: 1  Memory Usage: 6929kB
+                                      Buffers: shared hit=161 read=11551
+                                      ->  Seq Scan on mv_interacoes_video  (cost=0.00..24185.19 rows=1247319 width=16) (actual time=0.059..145.685 rows=1247319 loops=1)
+                                            Buffers: shared hit=161 read=11551
+Planning:
+  Buffers: shared hit=887
+Planning Time: 3.712 ms
+Execution Time: 895.918 ms

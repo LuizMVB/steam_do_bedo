@@ -1,0 +1,58 @@
+-- Item 10 · filtro: k=10 · variante: direta
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bench.item10_direta(10);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       653.597 |             4.212 |       19253 |     152443 |  171696  <- mediana
+--     2 |       696.669 |             4.851 |       20766 |     150930 |  171696
+--     3 |       543.587 |             4.297 |       20045 |     151651 |  171696
+--     4 |       657.273 |             3.514 |       19299 |     152397 |  171696
+--     5 |       651.605 |             4.845 |       20777 |     150919 |  171696
+-- Mediana do tempo: 653.597 ms (repetições em ordem: 543.6, 651.6, 653.6, 657.3, 696.7)
+-- Abaixo, o plano completo da repetição 1 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=62047.60..62047.72 rows=10 width=84) (actual time=652.297..652.330 rows=10 loops=1)
+  Buffers: shared hit=152443 read=19253, temp read=757 written=759
+  ->  Limit  (cost=62047.60..62047.62 rows=10 width=82) (actual time=652.294..652.300 rows=10 loops=1)
+        Buffers: shared hit=152443 read=19253, temp read=757 written=759
+        ->  Sort  (cost=62047.60..62137.36 rows=35906 width=82) (actual time=652.293..652.297 rows=10 loops=1)
+              Sort Key: (sum(d.valor)) DESC, c.nome
+              Sort Method: top-N heapsort  Memory: 26kB
+              Buffers: shared hit=152443 read=19253, temp read=757 written=759
+              ->  GroupAggregate  (cost=59700.88..61271.68 rows=35906 width=82) (actual time=616.408..650.518 rows=7198 loops=1)
+                    Group Key: c.id_canal
+                    Buffers: shared hit=152437 read=19253, temp read=757 written=759
+                    ->  Sort  (cost=59700.88..59925.28 rows=89758 width=56) (actual time=616.329..631.681 rows=89923 loops=1)
+                          Sort Key: c.id_canal, d.id_video
+                          Sort Method: external merge  Disk: 6056kB
+                          Buffers: shared hit=152437 read=19253, temp read=757 written=759
+                          ->  Hash Join  (cost=1473.32..49247.10 rows=89758 width=56) (actual time=20.045..524.741 rows=89923 loops=1)
+                                Hash Cond: (v.id_canal = c.id_canal)
+                                Buffers: shared hit=152431 read=19253
+                                ->  Nested Loop  (cost=0.44..47538.58 rows=89758 width=30) (actual time=0.594..462.684 rows=89923 loops=1)
+                                      Buffers: shared hit=152431 read=18588
+                                      ->  Seq Scan on doacao d  (cost=0.00..2086.41 rows=89758 width=22) (actual time=0.029..29.511 rows=89923 loops=1)
+                                            Filter: ((status)::text <> 'recusado'::text)
+                                            Rows Removed by Filter: 10190
+                                            Buffers: shared read=835
+                                      ->  Memoize  (cost=0.44..1.55 rows=1 width=24) (actual time=0.004..0.004 rows=1 loops=89923)
+                                            Cache Key: d.id_video
+                                            Cache Mode: logical
+                                            Hits: 47377  Misses: 42546  Evictions: 0  Overflows: 0  Memory Usage: 5651kB
+                                            Buffers: shared hit=152431 read=17753
+                                            ->  Index Scan using video_pkey on video v  (cost=0.43..1.54 rows=1 width=24) (actual time=0.008..0.008 rows=1 loops=42546)
+                                                  Index Cond: (id_video = d.id_video)
+                                                  Buffers: shared hit=152431 read=17753
+                                ->  Hash  (cost=1024.06..1024.06 rows=35906 width=34) (actual time=19.097..19.098 rows=35906 loops=1)
+                                      Buckets: 65536  Batches: 1  Memory Usage: 2985kB
+                                      Buffers: shared read=665
+                                      ->  Seq Scan on canal c  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.030..10.363 rows=35906 loops=1)
+                                            Buffers: shared read=665
+Planning:
+  Buffers: shared hit=938 read=147
+Planning Time: 4.212 ms
+Execution Time: 653.597 ms

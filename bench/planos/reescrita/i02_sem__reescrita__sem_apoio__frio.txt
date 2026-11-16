@@ -1,0 +1,53 @@
+-- Item 2 · filtro: sem filtro · variante: reescrita
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bench.item2_direta();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |     20683.121 |            25.398 |      106795 |     107696 |  214491
+--     2 |     27097.913 |            63.084 |      106797 |     107694 |  214491
+--     3 |     16660.401 |            26.924 |      106796 |     107695 |  214491
+--     4 |     17541.103 |            24.276 |      106795 |     107696 |  214491  <- mediana
+--     5 |     15960.714 |            23.236 |      106795 |     107696 |  214491
+-- Mediana do tempo: 17541.103 ms (repetições em ordem: 15960.7, 16660.4, 17541.1, 20683.1, 27097.9)
+-- Abaixo, o plano completo da repetição 4 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=1796984.86..1859489.08 rows=5000338 width=92) (actual time=16480.031..17447.615 rows=1247319 loops=1)
+  Buffers: shared hit=107696 read=106795, temp read=32068 written=32109
+  ->  Sort  (cost=1796984.86..1809485.70 rows=5000338 width=91) (actual time=16480.005..17199.292 rows=1247319 loops=1)
+        Sort Key: (count(c.seq)) DESC, v.titulo
+        Sort Method: external merge  Disk: 128296kB
+        Buffers: shared hit=107696 read=106795, temp read=32068 written=32109
+        ->  GroupAggregate  (cost=1.57..727871.39 rows=5000338 width=91) (actual time=7.019..9379.413 rows=1247319 loops=1)
+              Group Key: v.id_video, cn.nome, cn.nro_plataforma
+              Buffers: shared hit=107690 read=106795
+              ->  Incremental Sort  (cost=1.57..602862.94 rows=5000338 width=72) (actual time=7.011..7829.648 rows=5648854 loops=1)
+                    Sort Key: v.id_video, cn.nome, cn.nro_plataforma
+                    Presorted Key: v.id_video
+                    Full-sort Groups: 93696  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                    Pre-sorted Groups: 150081  Sort Method: quicksort  Average Memory: 1280kB  Peak Memory: 1419kB
+                    Buffers: shared hit=107690 read=106795
+                    ->  Merge Left Join  (cost=1.16..465329.07 rows=5000338 width=72) (actual time=1.880..5618.616 rows=5648854 loops=1)
+                          Merge Cond: (v.id_video = c.id_video)
+                          Buffers: shared hit=107687 read=106795
+                          ->  Nested Loop  (cost=0.73..94636.99 rows=1247319 width=67) (actual time=1.586..2263.623 rows=1247319 loops=1)
+                                Buffers: shared hit=107191 read=25532
+                                ->  Index Scan using video_pkey on video v  (cost=0.43..57776.21 rows=1247319 width=49) (actual time=0.475..614.555 rows=1247319 loops=1)
+                                      Buffers: shared hit=380 read=24625
+                                ->  Memoize  (cost=0.30..0.32 rows=1 width=34) (actual time=0.001..0.001 rows=1 loops=1247319)
+                                      Cache Key: v.id_canal
+                                      Cache Mode: logical
+                                      Hits: 1211413  Misses: 35906  Evictions: 0  Overflows: 0  Memory Usage: 4997kB
+                                      Buffers: shared hit=106811 read=907
+                                      ->  Index Scan using canal_pkey on canal cn  (cost=0.29..0.31 rows=1 width=34) (actual time=0.007..0.007 rows=1 loops=35906)
+                                            Index Cond: (id_canal = v.id_canal)
+                                            Buffers: shared hit=106811 read=907
+                          ->  Index Scan using comentario_pkey on comentario c  (cost=0.43..305069.57 rows=5000338 width=21) (actual time=0.290..2105.645 rows=5000380 loops=1)
+                                Buffers: shared hit=496 read=81263
+Planning:
+  Buffers: shared hit=855 read=135
+Planning Time: 24.276 ms
+Execution Time: 17541.103 ms

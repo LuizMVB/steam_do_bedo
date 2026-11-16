@@ -1,0 +1,74 @@
+-- Item 2 · filtro: canal · variante: original
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bench.item2_original('Echo.Queen 136733 TV');
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |      3941.204 |            26.500 |      114236 |         45 |  114281
+--     2 |      4943.443 |            43.408 |      114236 |         45 |  114281
+--     3 |      3930.580 |            30.317 |      114236 |         45 |  114281  <- mediana
+--     4 |      3637.811 |            28.168 |      114236 |         45 |  114281
+--     5 |      3796.985 |            21.753 |      114236 |         45 |  114281
+-- Mediana do tempo: 3930.580 ms (repetições em ordem: 3637.8, 3797.0, 3930.6, 3941.2, 4943.4)
+-- Abaixo, o plano completo da repetição 3 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=242256.14..242256.58 rows=35 width=88) (actual time=3918.904..3919.146 rows=1036 loops=1)
+  Buffers: shared hit=45 read=114236, temp read=21424 written=33306
+  ->  Sort  (cost=242256.14..242256.23 rows=35 width=83) (actual time=3918.903..3918.986 rows=1036 loops=1)
+        Sort Key: ((COALESCE(sum(("*SELECT* 1".qtd_online + ((0)::bigint))), '0'::numeric))::bigint) DESC
+        Sort Method: quicksort  Memory: 156kB
+        Buffers: shared hit=45 read=114236, temp read=21424 written=33306
+        ->  GroupAggregate  (cost=242253.67..242255.24 rows=35 width=83) (actual time=3917.764..3918.501 rows=1036 loops=1)
+              Group Key: cn.nro_plataforma, v.titulo, v.datah
+              Buffers: shared hit=42 read=114236, temp read=21424 written=33306
+              ->  Sort  (cost=242253.67..242253.75 rows=35 width=75) (actual time=3917.690..3917.778 rows=1036 loops=1)
+                    Sort Key: cn.nro_plataforma, v.titulo, v.datah
+                    Sort Method: quicksort  Memory: 147kB
+                    Buffers: shared hit=42 read=114236, temp read=21424 written=33306
+                    ->  Hash Right Join  (cost=112683.68..242252.77 rows=35 width=75) (actual time=3029.745..3913.617 rows=1036 loops=1)
+                          Hash Cond: ("*SELECT* 1".id_video = v.id_video)
+                          Buffers: shared hit=33 read=114236, temp read=21424 written=33306
+                          ->  Append  (cost=112408.27..240735.70 rows=90300 width=32) (actual time=977.015..3588.551 rows=687476 loops=1)
+                                Buffers: shared hit=32 read=113212, temp read=21424 written=33306
+                                ->  Subquery Scan on "*SELECT* 1"  (cost=112408.27..113424.15 rows=45150 width=32) (actual time=977.003..1017.264 rows=88631 loops=1)
+                                      Buffers: shared read=56622, temp read=524 written=1101
+                                      ->  HashAggregate  (cost=112408.27..112859.77 rows=45150 width=28) (actual time=976.996..1006.646 rows=88631 loops=1)
+                                            Group Key: comentario.id_video
+                                            Batches: 5  Memory Usage: 8241kB  Disk Usage: 5944kB
+                                            Buffers: shared read=56622, temp read=524 written=1101
+                                            ->  Seq Scan on comentario  (cost=0.00..106625.38 rows=1156578 width=16) (actual time=0.373..715.756 rows=1135193 loops=1)
+                                                  Filter: coment_on
+                                                  Rows Removed by Filter: 3865187
+                                                  Buffers: shared read=56622
+                                ->  Subquery Scan on "*SELECT* 2"  (cost=125844.18..126860.05 rows=45150 width=32) (actual time=1740.049..2512.072 rows=598845 loops=1)
+                                      Buffers: shared hit=32 read=56590, temp read=20900 written=32205
+                                      ->  HashAggregate  (cost=125844.18..126295.68 rows=45150 width=28) (actual time=1740.022..2443.589 rows=598845 loops=1)
+                                            Group Key: comentario_1.id_video
+                                            Batches: 21  Memory Usage: 8249kB  Disk Usage: 120624kB
+                                            Buffers: shared hit=32 read=56590, temp read=20900 written=32205
+                                            ->  Seq Scan on comentario comentario_1  (cost=0.00..106625.38 rows=3843760 width=16) (actual time=0.084..624.204 rows=3865187 loops=1)
+                                                  Filter: (NOT coment_on)
+                                                  Rows Removed by Filter: 1135193
+                                                  Buffers: shared hit=32 read=56590
+                          ->  Hash  (cost=274.98..274.98 rows=35 width=75) (actual time=255.129..255.139 rows=1036 loops=1)
+                                Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 131kB
+                                Buffers: shared hit=1 read=1024
+                                ->  Nested Loop  (cost=5.37..274.98 rows=35 width=75) (actual time=9.610..253.952 rows=1036 loops=1)
+                                      Buffers: shared hit=1 read=1024
+                                      ->  Index Scan using canal_nome_plataforma_key on canal cn  (cost=0.41..8.43 rows=1 width=34) (actual time=1.722..1.727 rows=1 loops=1)
+                                            Index Cond: ((nome)::text = 'Echo.Queen 136733 TV'::text)
+                                            Buffers: shared read=4
+                                      ->  Bitmap Heap Scan on video v  (cost=4.95..265.86 rows=68 width=57) (actual time=7.881..251.675 rows=1036 loops=1)
+                                            Recheck Cond: (id_canal = cn.id_canal)
+                                            Heap Blocks: exact=1005
+                                            Buffers: shared hit=1 read=1020
+                                            ->  Bitmap Index Scan on video_canal_titulo_datah_key  (cost=0.00..4.94 rows=68 width=0) (actual time=7.434..7.438 rows=1036 loops=1)
+                                                  Index Cond: (id_canal = cn.id_canal)
+                                                  Buffers: shared hit=1 read=15
+Planning:
+  Buffers: shared hit=979 read=129
+Planning Time: 30.317 ms
+Execution Time: 3930.580 ms

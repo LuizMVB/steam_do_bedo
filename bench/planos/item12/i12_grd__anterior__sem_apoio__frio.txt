@@ -1,0 +1,45 @@
+-- Item 12 · filtro: k=10, YouTube · variante: anterior
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: frio (restart do Postgres + drop_caches antes de cada repetição)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bench.item12_anterior(10, 1);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |        13.222 |             7.269 |         666 |          6 |     672
+--     2 |        15.805 |             7.234 |         666 |          6 |     672  <- mediana
+--     3 |        24.694 |             7.149 |         666 |          6 |     672
+--     4 |        16.523 |             8.010 |         666 |          6 |     672
+--     5 |        13.249 |            11.477 |         666 |          6 |     672
+-- Mediana do tempo: 15.805 ms (repetições em ordem: 13.2, 13.2, 15.8, 16.5, 24.7)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=1961.78..1961.79 rows=1 width=52) (actual time=15.600..15.603 rows=1 loops=1)
+  Buffers: shared hit=6 read=666
+  ->  Limit  (cost=1961.78..1961.79 rows=1 width=27) (actual time=15.598..15.601 rows=1 loops=1)
+        Buffers: shared hit=6 read=666
+        ->  Sort  (cost=1961.78..1961.79 rows=1 width=27) (actual time=15.597..15.598 rows=1 loops=1)
+              Sort Key: (count(DISTINCT c.id_streamer)) DESC, (count(c.id_canal)) DESC, p.nome
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=6 read=666
+              ->  GroupAggregate  (cost=1886.17..1961.77 rows=1 width=27) (actual time=15.576..15.578 rows=1 loops=1)
+                    Buffers: shared read=666
+                    ->  Sort  (cost=1886.17..1911.37 rows=10079 width=27) (actual time=14.041..14.548 rows=10092 loops=1)
+                          Sort Key: c.id_streamer
+                          Sort Method: quicksort  Memory: 858kB
+                          Buffers: shared read=666
+                          ->  Nested Loop Left Join  (cost=0.00..1215.96 rows=10079 width=27) (actual time=0.125..11.035 rows=10092 loops=1)
+                                Buffers: shared read=666
+                                ->  Seq Scan on plataforma p  (cost=0.00..1.35 rows=1 width=11) (actual time=0.056..0.059 rows=1 loops=1)
+                                      Filter: (nro = 1)
+                                      Rows Removed by Filter: 27
+                                      Buffers: shared read=1
+                                ->  Seq Scan on canal c  (cost=0.00..1113.83 rows=10079 width=20) (actual time=0.067..9.585 rows=10092 loops=1)
+                                      Filter: (nro_plataforma = 1)
+                                      Rows Removed by Filter: 25814
+                                      Buffers: shared read=665
+Planning:
+  Buffers: shared hit=506 read=81
+Planning Time: 7.234 ms
+Execution Time: 15.805 ms

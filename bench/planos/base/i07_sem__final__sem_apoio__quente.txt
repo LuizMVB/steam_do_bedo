@@ -1,0 +1,53 @@
+-- Item 7 · filtro: sem filtro · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_com_doacoes_recebidas();
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       311.791 |             3.246 |       19262 |     152428 |  171690
+--     2 |       365.006 |             3.778 |       20797 |     150893 |  171690  <- mediana
+--     3 |       383.085 |             3.244 |       20007 |     151683 |  171690
+--     4 |       487.604 |             2.997 |       19311 |     152379 |  171690
+--     5 |       320.970 |             2.730 |       20804 |     150886 |  171690
+-- Mediana do tempo: 365.006 ms (repetições em ordem: 311.8, 321.0, 365.0, 383.1, 487.6)
+-- Abaixo, o plano completo da repetição 2 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=71672.84..72794.81 rows=89758 width=76) (actual time=362.488..363.856 rows=7198 loops=1)
+  Buffers: shared hit=150893 read=20797
+  ->  Sort  (cost=71672.84..71897.23 rows=89758 width=74) (actual time=362.485..362.864 rows=7198 loops=1)
+        Sort Key: (sum(d.valor)) DESC, cn.nome
+        Sort Method: quicksort  Memory: 688kB
+        Buffers: shared hit=150893 read=20797
+        ->  HashAggregate  (cost=57774.11..60298.56 rows=89758 width=74) (actual time=356.148..358.808 rows=7198 loops=1)
+              Group Key: v.id_canal, cn.nome, cn.nro_plataforma
+              Planned Partitions: 4  Batches: 1  Memory Usage: 3857kB
+              Buffers: shared hit=150887 read=20797
+              ->  Hash Join  (cost=1473.32..49247.10 rows=89758 width=40) (actual time=14.917..312.356 rows=89923 loops=1)
+                    Hash Cond: (v.id_canal = cn.id_canal)
+                    Buffers: shared hit=150887 read=20797
+                    ->  Nested Loop  (cost=0.44..47538.58 rows=89758 width=14) (actual time=0.171..266.379 rows=89923 loops=1)
+                          Buffers: shared hit=150887 read=20132
+                          ->  Seq Scan on doacao d  (cost=0.00..2086.41 rows=89758 width=22) (actual time=0.028..18.409 rows=89923 loops=1)
+                                Filter: ((status)::text <> 'recusado'::text)
+                                Rows Removed by Filter: 10190
+                                Buffers: shared read=835
+                          ->  Memoize  (cost=0.44..1.55 rows=1 width=24) (actual time=0.002..0.002 rows=1 loops=89923)
+                                Cache Key: d.id_video
+                                Cache Mode: logical
+                                Hits: 47377  Misses: 42546  Evictions: 0  Overflows: 0  Memory Usage: 5651kB
+                                Buffers: shared hit=150887 read=19297
+                                ->  Index Scan using video_pkey on video v  (cost=0.43..1.54 rows=1 width=24) (actual time=0.004..0.004 rows=1 loops=42546)
+                                      Index Cond: (id_video = d.id_video)
+                                      Buffers: shared hit=150887 read=19297
+                    ->  Hash  (cost=1024.06..1024.06 rows=35906 width=34) (actual time=14.628..14.629 rows=35906 loops=1)
+                          Buckets: 65536  Batches: 1  Memory Usage: 2985kB
+                          Buffers: shared read=665
+                          ->  Seq Scan on canal cn  (cost=0.00..1024.06 rows=35906 width=34) (actual time=0.009..7.994 rows=35906 loops=1)
+                                Buffers: shared read=665
+Planning:
+  Buffers: shared hit=1049 read=120
+Planning Time: 3.778 ms
+Execution Time: 365.006 ms

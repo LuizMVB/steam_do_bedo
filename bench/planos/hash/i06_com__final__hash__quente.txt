@@ -1,0 +1,64 @@
+-- Item 6 · filtro: usuario · variante: final
+-- Cenário de índices: hash (hash em Inscricao(id_membro) e Canal(id_streamer), no lugar dos B-tree)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario('ghost.yt_297686');
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |         0.520 |             2.356 |           0 |        122 |     122
+--     2 |         0.399 |             2.178 |           0 |        122 |     122
+--     3 |         0.345 |             2.066 |           0 |        122 |     122
+--     4 |         0.368 |             2.157 |           0 |        122 |     122
+--     5 |         0.376 |             2.119 |           0 |        122 |     122  <- mediana
+-- Mediana do tempo: 0.376 ms (repetições em ordem: 0.3, 0.4, 0.4, 0.4, 0.5)
+-- Abaixo, o plano completo da repetição 5 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=29.57..29.59 rows=1 width=136) (actual time=0.279..0.282 rows=1 loops=1)
+  Buffers: shared hit=122
+  ->  Sort  (cost=29.57..29.58 rows=1 width=100) (actual time=0.278..0.280 rows=1 loops=1)
+        Sort Key: (round(sum((n.valor * cv.fator_conver)), 2)) DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=122
+        ->  GroupAggregate  (cost=29.52..29.56 rows=1 width=100) (actual time=0.236..0.238 rows=1 loops=1)
+              Group Key: i.id_membro, p.moeda
+              Buffers: shared hit=119
+              ->  Sort  (cost=29.52..29.53 rows=1 width=40) (actual time=0.221..0.223 rows=15 loops=1)
+                    Sort Key: i.id_membro, p.moeda
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=119
+                    ->  Nested Loop  (cost=13.04..29.51 rows=1 width=40) (actual time=0.089..0.195 rows=15 loops=1)
+                          Buffers: shared hit=113
+                          ->  Nested Loop  (cost=12.89..29.27 rows=1 width=35) (actual time=0.085..0.167 rows=15 loops=1)
+                                Buffers: shared hit=83
+                                ->  Nested Loop  (cost=12.48..28.82 rows=1 width=42) (actual time=0.076..0.103 rows=15 loops=1)
+                                      Buffers: shared hit=23
+                                      ->  Hash Join  (cost=8.45..12.98 rows=1 width=28) (actual time=0.060..0.066 rows=1 loops=1)
+                                            Hash Cond: ((p.ddi)::text = (u.pais_residencia)::text)
+                                            Buffers: shared hit=6
+                                            ->  Seq Scan on pais p  (cost=0.00..3.99 rows=199 width=7) (actual time=0.004..0.017 rows=199 loops=1)
+                                                  Buffers: shared hit=2
+                                            ->  Hash  (cost=8.44..8.44 rows=1 width=27) (actual time=0.018..0.018 rows=1 loops=1)
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                  Buffers: shared hit=4
+                                                  ->  Index Scan using usuario_nick_key on usuario u  (cost=0.42..8.44 rows=1 width=27) (actual time=0.014..0.015 rows=1 loops=1)
+                                                        Index Cond: ((nick)::text = 'ghost.yt_297686'::text)
+                                                        Buffers: shared hit=4
+                                      ->  Bitmap Heap Scan on inscricao i  (cost=4.02..15.81 rows=3 width=22) (actual time=0.015..0.033 rows=15 loops=1)
+                                            Recheck Cond: (id_membro = u.id_usuario)
+                                            Heap Blocks: exact=15
+                                            Buffers: shared hit=17
+                                            ->  Bitmap Index Scan on idx_inscricao_id_membro_hash  (cost=0.00..4.02 rows=3 width=0) (actual time=0.008..0.008 rows=15 loops=1)
+                                                  Index Cond: (id_membro = u.id_usuario)
+                                                  Buffers: shared hit=2
+                                ->  Index Scan using nivelcanal_pkey on nivelcanal n  (cost=0.42..0.45 rows=1 width=22) (actual time=0.004..0.004 rows=1 loops=15)
+                                      Index Cond: ((id_canal = i.id_canal) AND ((nivel)::text = (i.nivel)::text))
+                                      Buffers: shared hit=60
+                          ->  Index Scan using conversao_pkey on conversao cv  (cost=0.14..0.24 rows=1 width=9) (actual time=0.001..0.001 rows=1 loops=15)
+                                Index Cond: ((moeda)::text = (p.moeda)::text)
+                                Buffers: shared hit=30
+Planning:
+  Buffers: shared hit=1097
+Planning Time: 2.119 ms
+Execution Time: 0.376 ms

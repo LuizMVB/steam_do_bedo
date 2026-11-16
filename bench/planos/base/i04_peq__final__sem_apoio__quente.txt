@@ -1,0 +1,67 @@
+-- Item 4 · filtro: Kick · variante: final
+-- Cenário de índices: sem_apoio (só PK, UNIQUE e os UNIQUE das views materializadas)
+-- Cache: quente (1 execução de aquecimento descartada)
+-- Sessão: SET jit = off; SET max_parallel_workers_per_gather = 0;
+-- Consulta medida:
+--   EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM steam_do_bedo.sp_obter_canais_pela_media_doacoes_por_comentario(6);
+--
+-- Repetições (Execution Time e Buffers do nó raiz de cada uma):
+--   rep | execução (ms) | planejamento (ms) | shared read | shared hit | páginas
+--     1 |       304.674 |             1.951 |       19783 |       1579 |   21362  <- mediana
+--     2 |       312.754 |             3.973 |       19751 |       1611 |   21362
+--     3 |       323.059 |             2.385 |       19719 |       1643 |   21362
+--     4 |       294.329 |             2.453 |       19687 |       1675 |   21362
+--     5 |       294.780 |             3.487 |       19655 |       1707 |   21362
+-- Mediana do tempo: 304.674 ms (repetições em ordem: 294.3, 294.8, 304.7, 312.8, 323.1)
+-- Abaixo, o plano completo da repetição 1 (a mediana).
+
+Subquery Scan on "*SELECT*"  (cost=40195.08..40199.03 rows=316 width=108) (actual time=304.410..304.462 rows=233 loops=1)
+  Buffers: shared hit=1579 read=19783
+  ->  Sort  (cost=40195.08..40195.87 rows=316 width=106) (actual time=304.408..304.425 rows=233 loops=1)
+        Sort Key: (round(avg(dc.vr_comentario), 2)) DESC, dc.nome_canal
+        Sort Method: quicksort  Memory: 42kB
+        Buffers: shared hit=1579 read=19783
+        ->  GroupAggregate  (cost=39911.47..40181.96 rows=316 width=106) (actual time=299.659..304.283 rows=233 loops=1)
+              Group Key: dc.id_canal, dc.nome_canal, dc.nro_plataforma
+              Buffers: shared hit=1573 read=19783
+              ->  Incremental Sort  (cost=39911.47..40135.38 rows=3157 width=74) (actual time=299.640..303.362 rows=3223 loops=1)
+                    Sort Key: dc.id_canal, dc.nome_canal, dc.nro_plataforma
+                    Presorted Key: dc.id_canal, dc.nome_canal
+                    Full-sort Groups: 42  Sort Method: quicksort  Average Memory: 29kB  Peak Memory: 29kB
+                    Pre-sorted Groups: 31  Sort Method: quicksort  Average Memory: 34kB  Peak Memory: 43kB
+                    Buffers: shared hit=1573 read=19783
+                    ->  Subquery Scan on dc  (cost=39910.91..40037.19 rows=3157 width=74) (actual time=299.531..302.218 rows=3223 loops=1)
+                          Buffers: shared hit=1567 read=19783
+                          ->  GroupAggregate  (cost=39910.91..40005.62 rows=3157 width=94) (actual time=299.531..301.830 rows=3223 loops=1)
+                                Group Key: v.id_canal, cn.nome, d.id_video, d.seq_comentario
+                                Buffers: shared hit=1567 read=19783
+                                ->  Sort  (cost=39910.91..39918.80 rows=3157 width=60) (actual time=299.493..299.733 rows=3376 loops=1)
+                                      Sort Key: v.id_canal, cn.nome, d.id_video, d.seq_comentario
+                                      Sort Method: quicksort  Memory: 364kB
+                                      Buffers: shared hit=1567 read=19783
+                                      ->  Hash Join  (cost=37272.84..39727.42 rows=3157 width=60) (actual time=271.361..296.165 rows=3376 loops=1)
+                                            Hash Cond: (d.id_video = v.id_video)
+                                            Buffers: shared hit=1564 read=19783
+                                            ->  Seq Scan on doacao d  (cost=0.00..2086.41 rows=89758 width=26) (actual time=0.005..12.196 rows=89923 loops=1)
+                                                  Filter: ((status)::text <> 'recusado'::text)
+                                                  Rows Removed by Filter: 10190
+                                                  Buffers: shared hit=835
+                                            ->  Hash  (cost=36724.40..36724.40 rows=43875 width=50) (actual time=271.249..271.251 rows=24693 loops=1)
+                                                  Buckets: 65536  Batches: 1  Memory Usage: 2532kB
+                                                  Buffers: shared hit=729 read=19783
+                                                  ->  Hash Join  (cost=1129.61..36724.40 rows=43875 width=50) (actual time=2.671..258.370 rows=24693 loops=1)
+                                                        Hash Cond: (v.id_canal = cn.id_canal)
+                                                        Buffers: shared hit=729 read=19783
+                                                        ->  Seq Scan on video v  (cost=0.00..32320.19 rows=1247319 width=24) (actual time=0.049..116.475 rows=1247319 loops=1)
+                                                              Buffers: shared hit=64 read=19783
+                                                        ->  Hash  (cost=1113.83..1113.83 rows=1263 width=34) (actual time=2.585..2.586 rows=1252 loops=1)
+                                                              Buckets: 2048  Batches: 1  Memory Usage: 103kB
+                                                              Buffers: shared hit=665
+                                                              ->  Seq Scan on canal cn  (cost=0.00..1113.83 rows=1263 width=34) (actual time=0.008..2.369 rows=1252 loops=1)
+                                                                    Filter: (nro_plataforma = 6)
+                                                                    Rows Removed by Filter: 34654
+                                                                    Buffers: shared hit=665
+Planning:
+  Buffers: shared hit=1065
+Planning Time: 1.951 ms
+Execution Time: 304.674 ms

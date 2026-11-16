@@ -386,7 +386,7 @@ custo**: toda conta nova atualiza a linha da plataforma.
 |---|---|---|
 | Linha quente | Todo cadastro numa plataforma trava a mesma linha até o `COMMIT`. Com commit de 1 a 5 ms, o teto é de ~200 a 1.000 contas por segundo, inseridas uma a uma, por plataforma | Hoje cabe: o TikTok chegou a ~1,6 bilhão de usuários em ~7 anos, ~7 contas por segundo. O Threads teve 100 milhões de cadastros em 5 dias, ~230 por segundo na média, e isso já encosta no teto. No pior caso do cenário (6 bilhões de pessoas em 60 plataformas, em 10 anos), só o YouTube receberia ~320 por segundo |
 | Comparação com o T1 | O T1 espalha as escritas por 36 mil canais; o T2 concentra todos os cadastros em 28 linhas | Por escrita, a disputa é muito maior no T2 |
-| Inchaço | Cada `UPDATE` cria uma nova versão da linha. Uma transação longa, como o `REFRESH CONCURRENTLY` da V3 (~19 s), impede a limpeza: a 230 cadastros por segundo, são ~4.400 versões mortas da linha do YouTube, numa página que comporta ~100 | `Plataforma` cresce de 1 para dezenas de páginas, e o autovacuum dispara em todo ciclo (limite de ~56 versões mortas) |
+| Inchaço | Cada `UPDATE` cria uma nova versão da linha. Uma transação longa, como o `REFRESH CONCURRENTLY` da V3 (~27 s), impede a limpeza: a 230 cadastros por segundo, são ~6.200 versões mortas da linha do YouTube, numa página que comporta ~100 | `Plataforma` cresce de 1 para dezenas de páginas, e o autovacuum dispara em todo ciclo (limite de ~56 versões mortas) |
 | Deadlock | Dentro de um comando, as plataformas são atualizadas em ordem de número | Transações que inserem contas em plataformas diferentes, em comandos separados e em ordens opostas, ainda podem travar uma à outra |
 | Leitura | Só o item 12 lê `qtd_users`, e só como contexto, fora do critério de ordenação | Paga-se custo em toda escrita para manter exato um valor pouco lido |
 
@@ -412,16 +412,16 @@ plataforma chegar a centenas de cadastros por segundo.
 |---|---|---|---|---|
 | V1 `vw_doacao_recebida` | Virtual | Itens 4, 7 e a V4 | Concentra num lugar só a regra de status e o caminho doação → vídeo → canal. Virtual para que o filtro desça até os índices das tabelas base | Mesmo patamar da consulta direta |
 | V2 `vw_inscricao_usd` | Virtual | Item 6 e a V4 | Concentra a conversão dos membros | Idem |
-| V3 `mv_interacoes_video` | Materializada | Itens 2 e 3 | Contar 5 milhões de comentários dominava o tempo. Contagem de comentários tolera atraso | Item 3 filtrado 6,8 s → 0,18 s (39×) |
-| V4 `mv_faturamento_canal` | Materializada | Itens 8 a 11 | O top-k ordena por um valor agregado, e nenhum índice nas tabelas base atende isso. Para escolher patrocínio, atraso de horas é aceitável | Item 10: 2,4 s → 26 ms (93×) |
+| V3 `mv_interacoes_video` | Materializada | Itens 2 e 3 | Contar 5 milhões de comentários dominava o tempo. Contagem de comentários tolera atraso | Item 3 filtrado 7,5 s → 0,22 s (33×) |
+| V4 `mv_faturamento_canal` | Materializada | Itens 8 a 11 | O top-k ordena por um valor agregado, e nenhum índice nas tabelas base atende isso. Para escolher patrocínio, atraso de horas é aceitável | Item 10: 0,73 s → 28 ms (26×) |
 
 - **View virtual não acelera por si só:** o planejador a expande dentro da
   consulta. Ela vale pela regra centralizada. O ganho de tempo vem das
   materializadas.
 - **Atualização:** periódica, com `CALL sp_refresh_views()`, que faz o
   `REFRESH … CONCURRENTLY` sem bloquear leituras. Não é por trigger: o refresh da
-  V3 leva 8 a 19 s, e recontar a cada comentário custaria mais que a consulta.
-- **V5 (item 12) medida e descartada:** cairia de ~60 para ~10 ms numa resposta
+  V3 leva de 12 a 27 s, e recontar a cada comentário custaria mais que a consulta.
+- **V5 (item 12) medida e descartada:** cairia de ~70 para ~7 ms numa resposta
   de 28 linhas, mas o item 12 deixaria de ser exato até o próximo refresh.
 
 ## 10. Consultas (item mandatório 6)
@@ -444,7 +444,7 @@ plataforma chegar a centenas de cadastros por segundo.
   porque a posição global impede o planejador de empurrar o filtro e porque
   valida os parâmetros com mensagem clara.
 - **Reescrita antes dos índices,** como o professor orientou: filtrar antes de agregar e
-  ler a V3 deixou o item 3 filtrado 39 vezes mais rápido e o item 2 filtrado 11
+  ler a V3 deixou o item 3 filtrado 33 vezes mais rápido e o item 2 filtrado 6
   vezes. Sem filtro, a reescrita direta piorou (estoura o `work_mem` e ordena em
   disco), e por isso esses casos leem a V3.
 - **Item 12: top-k plataformas por streamers E canais.**
@@ -463,9 +463,9 @@ plataforma chegar a centenas de cadastros por segundo.
 |---|---|---|---|---|
 | 1 | `ux_mv_interacoes_video (id_canal, id_video)` | V3: itens 2 e 3 | Obrigatório para o `REFRESH CONCURRENTLY`; com `id_canal` na frente, também atende o filtro por canal | 48 MB; só no refresh |
 | 2 | `ux_mv_faturamento_canal (id_canal)` | V4: itens 8 a 11 | Obrigatório para o `REFRESH CONCURRENTLY` | 0,5 MB; só no refresh |
-| 3 | `idx_inscricao_id_membro` (B-tree) | Item 6 por usuário; FK ao remover usuário | 160 → 7 ms; páginas 4.040 → 54 | +59% |
-| 4 | `idx_canal_id_streamer` (B-tree) | Item 3 por streamer; T9 e T10 ("tem canal?") | Páginas 1.554 → 892 | +17% |
-| 5 | `idx_video_id_canal_cobertura (id_canal) INCLUDE (visu_total)` | Item 1 por plataforma | 587 → 341 ms; páginas 25.526 → 9.530 | +9% |
+| 3 | `idx_inscricao_id_membro` (B-tree) | Item 6 por usuário; FK ao remover usuário | 155 → 4,5 ms; páginas 4.135 → 123 | +63% |
+| 4 | `idx_canal_id_streamer` (B-tree) | Item 3 por streamer; T9 e T10 ("tem canal?") | Páginas 1.689 → 1.027; a quente 11 → 1,8 ms | +18% |
+| 5 | `idx_video_id_canal_cobertura (id_canal) INCLUDE (visu_total)` | Item 1 por plataforma | 749 → 444 ms; páginas 25.526 → 9.530 | +7% |
 
 **Método, como o professor indicou:**
 1. inventário dos predicados das 12 consultas: igualdade, faixa, join,
@@ -479,21 +479,23 @@ plataforma chegar a centenas de cadastros por segundo.
   streamer ~1,4 canal; o filtro devolve 0,0025% e 0,014% da tabela. A PK de
   `Inscricao` começa por `id_canal` e não serve para buscar por membro. São os
   "índices secundários sobre parte da chave" que o professor descreveu. O de
-  `Inscricao` é o mais caro (+59%), mas inscrição é escrita rara e a busca por
+  `Inscricao` é o mais caro (+63%), mas inscrição é escrita rara e a busca por
   usuário é frequente.
 - **5 (cobertura):** os vídeos de um canal ficam espalhados pela tabela (a ordem
   física segue o id, não o canal), e ler pela tabela custa uma página por vídeo.
   Com `visu_total` no `INCLUDE`, o plano lê só o índice (*Index Only Scan*).
 
 **Hash × B-tree:** nos predicados só de igualdade (3 e 4), os dois foram medidos.
-O hash leu as mesmas páginas, ficou maior (10,6 contra 8,7 MB) e não inseriu mais
-rápido. Ficou o B-tree, que também entrega em ordem.
+O hash leu as mesmas páginas, no mesmo tempo, e ficou maior (10,1 contra 8,4 MB
+no lote de `Inscricao`). Na escrita, nenhum venceu sempre: o hash inseriu mais
+rápido em `Inscricao` e mais devagar em `Canal`. Ficou o B-tree, que lê o mesmo,
+ocupa menos e também entrega em ordem.
 
 **Não indexados de propósito (o caso "todos americanos"):**
 - `status <> 'recusado'` devolve 90% das doações;
 - os itens sem filtro e o item 1 com o YouTube (28% dos canais) leem quase a
   tabela toda, e a varredura sequencial vence com ou sem índice;
-- `Canal (nro_plataforma)`, de uma versão anterior: `Canal` tem 951 páginas e é
+- `Canal (nro_plataforma)`, de uma versão anterior: `Canal` tem 665 páginas e é
   lida em milissegundos; sem ganho medido;
 - `Comentario (id_usuario)`: nenhuma consulta filtra por autor, e o índice
   pesaria na maior tabela.
@@ -506,8 +508,8 @@ PostgreSQL lê páginas de 8 KB. Pelos tamanhos reais da carga:
 
 | Tabela | Linhas | Páginas | Linhas por página |
 |---|---:|---:|---:|
-| `Comentario` (tabela) | 5.000.058 | 56.618 | ~88 |
-| `comentario_pkey` (índice) | 5.000.058 | 24.781 | ~200 |
+| `Comentario` (tabela) | 5.000.380 | 56.622 | ~88 |
+| `comentario_pkey` (índice) | 5.000.380 | 24.781 | ~200 |
 | `Video` (tabela) | 1.247.319 | 19.847 | ~63 |
 
 - **Com 10.000 comentários** (o teto do enunciado), a tabela teria ~114 páginas
@@ -529,18 +531,19 @@ diferença. A carga tem **cerca de 8,7 milhões de registros**:
 | Conversao | 154 | Inscricao | 598.075 |
 | Pais | 199 | Patrocinio | 18.785 |
 | Empresa | 3.000 | Video | 1.247.319 |
-| EmpresaPais | 3.471 | Participa | 94.415 |
-| Plataforma | 28 | Comentario | 5.000.143 |
-| Usuario | 500.000 | Doacao | 99.510 |
-| PlataformaUsuario | 856.263 | BitCoin | 9.669 |
-| StreamerPais | 26.081 | PayPal | 21.494 |
-| Canal | 35.906 | CartaoCredito | 23.719 |
-| NivelCanal | 98.855 | MecanismoPlat | 44.628 |
+| EmpresaPais | 3.471 | Participa | 94.416 |
+| Plataforma | 28 | Comentario | 5.000.380 |
+| Usuario | 500.000 | Doacao | 100.113 |
+| PlataformaUsuario | 856.263 | BitCoin | 9.623 |
+| StreamerPais | 26.081 | PayPal | 21.730 |
+| Canal | 35.906 | CartaoCredito | 23.880 |
+| NivelCanal | 98.855 | MecanismoPlat | 44.880 |
 
-A contagem foi feita na versão com UUID v7 (tag `v1.1.0`). Com o
-`gen_random_uuid()`, o sorteio das doações percorre os comentários numa ordem um
-pouco diferente. Por isso `Doacao` e as quatro formas de pagamento podem variar
-algumas centenas de registros; as demais tabelas não mudam.
+A contagem é da carga usada no [benchmark.md](benchmark.md). Os UUIDs dos vídeos
+mudam a cada carga (o `gen_random_uuid()` não obedece à semente), e alguns
+sorteios dependem deles. Por isso `Comentario`, `Participa`, `Doacao`,
+`MecanismoPlat` e as formas de pagamento podem variar algumas centenas de
+registros entre cargas; as demais tabelas não mudam.
 
 | Escolha | Por quê |
 |---|---|
@@ -564,8 +567,9 @@ Cada medida a frio é feita depois de:
 São 5 repetições, e o valor usado é a mediana. A medida só vale como fria se o
 plano mostrar páginas lidas do disco (`shared read` > 0). A sessão de medida usa
 `jit = off` e um único processo, para os tempos serem comparáveis. O cache
-esconde o custo: o item 2 filtrado leva 326 ms a frio e 5 ms a quente. O
-resultado completo está em [benchmark.md](benchmark.md).
+esconde o custo: o item 2 filtrado leva 631 ms a frio e 11 ms a quente. O
+resultado completo está em [benchmark.md](benchmark.md), e o `EXPLAIN ANALYZE` de
+cada medida, em [`bench/planos/`](bench/planos/).
 
 ## 14. Entrega
 

@@ -1,0 +1,23 @@
+-- INSERT em lote em canal: 35906 linhas em ordem aleatória numa cópia vazia
+-- Índice extra: hash (id_streamer)
+-- Tamanho do índice extra no fim: 1.335.296 bytes
+-- Rodadas (Execution Time):
+--   1 |    345.613 ms
+--   2 |    659.006 ms  <- mediana
+--   3 |    971.028 ms
+-- Abaixo, o plano da rodada 2 (a mediana).
+
+Insert on copia  (cost=6042.46..6491.29 rows=0 width=0) (actual time=650.944..650.958 rows=0 loops=1)
+  Buffers: shared hit=270859 read=2 dirtied=1232 written=1110, temp read=616 written=617
+  ->  Subquery Scan on "*SELECT*"  (cost=6042.46..6491.29 rows=35906 width=112) (actual time=28.427..56.684 rows=35906 loops=1)
+        Buffers: shared hit=668, temp read=616 written=617
+        ->  Sort  (cost=6042.46..6132.23 rows=35906 width=120) (actual time=28.424..45.148 rows=35906 loops=1)
+              Sort Key: (random())
+              Sort Method: external merge  Disk: 4928kB
+              Buffers: shared hit=668, temp read=616 written=617
+              ->  Seq Scan on canal  (cost=0.00..1113.83 rows=35906 width=120) (actual time=0.019..5.695 rows=35906 loops=1)
+                    Buffers: shared hit=665
+Planning:
+  Buffers: shared hit=156
+Planning Time: 0.329 ms
+Execution Time: 659.006 ms
