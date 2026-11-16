@@ -9,7 +9,7 @@
 --   * nos top-k, com k pequeno, k = 10 e k nulo (todos).
 -- O arquivo só lê: não insere, não altera e não apaga nada.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- Ordem de execução: ddl.sql -> seed.sql -> views.sql ->
 -- functions.sql -> triggers.sql -> tests.sql.
 --
 -- Valores dos filtros: o seed é determinístico, então na escala 1 os
@@ -28,8 +28,7 @@
 -- planejador (inlining), o LIMIT também reduz o trabalho da consulta.
 --
 -- Itens 2, 3 e 8 a 11 leem views materializadas: refletem a última
--- CALL steam_do_bedo.sp_refresh_views() (DEC-028).
--- DEC-029, DEC-035
+-- CALL steam_do_bedo.sp_refresh_views().
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -44,7 +43,7 @@ SELECT * FROM sp_obter_streamers_com_maior_qtd_videos_publicados() LIMIT 10;
 -- plataforma grande
 SELECT * FROM sp_obter_streamers_com_maior_qtd_videos_publicados(
     (SELECT nro FROM plataforma WHERE nome = 'YouTube')) LIMIT 10;
--- plataforma pequena (usa o índice de cobertura em Video, DEC-034)
+-- plataforma pequena (usa o índice de cobertura em Video)
 SELECT * FROM sp_obter_streamers_com_maior_qtd_videos_publicados(
     (SELECT nro FROM plataforma WHERE nome = 'Kick')) LIMIT 10;
 -- plataforma inexistente: zero linhas
@@ -102,7 +101,7 @@ SELECT * FROM sp_obter_canais_patrocinados_com_valores_por_empresa('Empresa Inex
 -- ---------------------------------------------------------------------
 -- sem filtro
 SELECT * FROM sp_obter_qtd_canais_e_gasto_mensal_por_usuario() LIMIT 10;
--- membro com mais inscrições (usa idx_inscricao_id_membro, DEC-034)
+-- membro com mais inscrições (usa idx_inscricao_id_membro)
 SELECT * FROM sp_obter_qtd_canais_e_gasto_mensal_por_usuario('ghost.yt_297686');
 -- usuário inexistente: zero linhas
 SELECT * FROM sp_obter_qtd_canais_e_gasto_mensal_por_usuario('usuario_inexistente');
@@ -155,7 +154,7 @@ FROM sp_obter_top_k_canais_por_faturamento(10);
 
 -- ---------------------------------------------------------------------
 -- 12. DESAFIO: top-k plataformas pela quantidade de streamers E de canais
---     (filtro opcional: plataforma). Interpretação na DEC-035:
+--     (filtro opcional: plataforma). Interpretação:
 --     streamer = dono de canal na plataforma, contado uma vez; ordena por
 --     streamers e desempata por canais; a posição é a do ranking global,
 --     mesmo com filtro; empates no corte de k entram todos.

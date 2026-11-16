@@ -10,8 +10,9 @@ O banco cataloga streamers de jogos online para responder a perguntas sobre:
 - membros inscritos;
 - interações (comentários).
 
-As decisões de projeto estão em [decisions.md](decisions.md), e as medições de
-desempenho em [benchmark.md](benchmark.md).
+As decisões de projeto estão resumidas em [decisoes_resumo.md](decisoes_resumo.md)
+e explicadas uma a uma em [decisoes_detalhamento.md](decisoes_detalhamento.md);
+as medições de desempenho, em [benchmark.md](benchmark.md).
 
 ## Requisitos
 
@@ -194,6 +195,7 @@ Em outro PostgreSQL 17, sem Docker, a ordem é a mesma, com
 | `functions.sql` | Functions das 12 consultas e os índices de apoio |
 | `triggers.sql` | Triggers T1 a T11 |
 | `tests.sql` | Chamadas das functions em vários cenários |
-| `decisions.md` | Decisões de projeto e justificativas |
+| `decisoes_resumo.md` | Resumo das decisões de projeto e justificativas |
+| `decisoes_detalhamento.md` | Cada decisão por extenso: exigência, alternativas, medições e limitações |
 | `benchmark.md`, `imagens/` | Comparações de desempenho e gráficos |
 | `docker-compose.yml`, `Makefile` | Ambiente e atalhos de execução |

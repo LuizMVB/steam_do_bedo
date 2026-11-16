@@ -1,8 +1,10 @@
 # Stream do Bedo · Benchmark
 
 Este arquivo reúne as comparações de desempenho que embasaram as decisões de
-consultas, views e índices (seções 9 a 11 do [decisions.md](decisions.md)). Os
-gráficos estão em [`imagens/`](imagens/).
+consultas, views e índices (seções 9 a 11 do
+[decisoes_resumo.md](decisoes_resumo.md) e do
+[decisoes_detalhamento.md](decisoes_detalhamento.md)). Os gráficos estão em
+[`imagens/`](imagens/).
 
 Cada teste abaixo traz:
 - **O que foi medido:** a pergunta que o teste responde;
@@ -321,7 +323,7 @@ mediana de 5. Muda só a forma de implementação.
 **Legenda do gráfico 08:**
 - **Eixo vertical:** tempo de execução a frio em ms, escala log.
 - **Eixo horizontal:** sem filtro, filtro Kick e filtro YouTube.
-- **Azul, "anterior (DEC-029)":** a primeira versão, que com filtro só olhava a
+- **Azul, "anterior":** a primeira versão, que com filtro só olhava a
   plataforma pedida e respondia "1º de 1".
 - **Laranja, "final, sem índice de apoio":** a versão entregue, sem os índices
   de apoio.

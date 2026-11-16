@@ -1,20 +1,19 @@
 -- =====================================================================
 -- Projeto de Banco de Dados 2026/2 - Stream do Bedo
--- Arquivo 2/6: carga de dados (seed v3) - PostgreSQL 17
+-- Arquivo 2/6: carga de dados - PostgreSQL 17
 --
 -- O que faz: popula as 20 tabelas do zero, com dados artificiais em
 -- distribuições desbalanceadas e correlacionadas, coerentes com o cenário
--- de volumetria da DEC-020 (streaming de jogos com vídeo longo E curto).
--- É a terceira versão da carga (seed v3); as anteriores estão na tag v1.1.0.
+-- de volumetria das decisões (streaming de jogos com vídeo longo E curto).
 --
--- Ordem de execução (DEC-030):
+-- Ordem de execução:
 --   psql -v ON_ERROR_STOP=1 -d <banco> -f ddl.sql
 --   psql -v ON_ERROR_STOP=1 -d <banco> -f seed.sql            (escala 1)
 --   psql -v ON_ERROR_STOP=1 -d <banco> -v escala=0.1 -f seed.sql  (teste rápido)
 --   depois: views.sql, functions.sql, triggers.sql, tests.sql
 --
--- DECs implementadas: 019 a 027 (o seed obedece às mesmas regras dos
--- triggers, que só são criados depois da carga) e 031 (volumes).
+-- O seed obedece às mesmas regras dos triggers, que só são criados
+-- depois da carga, e calcula os atributos derivados no próprio INSERT.
 --
 -- Escala (variável psql "escala", padrão 1). Volumes aproximados:
 --   tabela              escala 1     de onde vem
@@ -35,7 +34,7 @@
 --   Doacao              ~2%          dos comentários (5% online, 1% offline)
 --   BitCoin/PayPal/CartaoCredito/MecanismoPlat: partição disjunta de Doacao
 -- O professor autorizou tabelas de referência abaixo de 1.000 linhas e
--- pediu o máximo de dados possível nas grandes (DEC-031, consulta 04:09).
+-- pediu o máximo de dados possível nas grandes (consulta de 2026-11-11, 04:09).
 --
 -- Garantias:
 --   * Parte de banco virgem: aborta se alguma tabela tiver linhas.
@@ -57,7 +56,7 @@
 --   * Atributos derivados (Plataforma.qtd_users, Canal.qtd_visualizacoes)
 --     calculados no próprio INSERT, a partir de tabelas temporárias de
 --     preparação; não há UPDATE final (que deixaria tuplas mortas).
---   * Obedece às regras dos triggers (DEC-027): seq contínuo por vídeo e
+--   * Obedece às regras dos triggers: seq contínuo por vídeo e
 --     por comentário, seq_plataforma contínuo por (usuário, plataforma),
 --     no máximo 5 níveis por canal, especialização disjunta e total, datas
 --     em ordem (inclusive o Mixer, encerrado em 2020-07-22), dono do canal
@@ -176,7 +175,7 @@ $$ SELECT 1 + floor(n * power(random(), a))::bigint $$;
 -- ---------------------------------------------------------------------
 -- Conversao: 154 moedas ISO 4217 reais, fator aproximado para USD
 -- (cotações de 2025, arredondadas). Tamanho real, sem moedas fictícias
--- (DEC-031). Inclui moedas sem país na tabela Pais (territórios), que
+--. Inclui moedas sem país na tabela Pais (territórios), que
 -- continuam válidas no catálogo de moedas.
 -- ---------------------------------------------------------------------
 INSERT INTO steam_do_bedo.Conversao (moeda, nome, fator_conver) VALUES
@@ -271,7 +270,7 @@ INSERT INTO steam_do_bedo.Conversao (moeda, nome, fator_conver) VALUES
 -- +7 é de Rússia e Cazaquistão). Como a PK é o DDI, o seed usa o prefixo
 -- que distingue o país: os países do Caribe no +1 usam 1 + código de área
 -- (Jamaica 1876), o Canadá usa 1613 (Ottawa), o Cazaquistão 77 e o
--- Vaticano 379 (código reservado a ele pela UIT). DEC-031.
+-- Vaticano 379 (código reservado a ele pela UIT).
 -- "peso" (só na carga) é a participação relativa do país no público de
 -- streaming, usada para sortear a residência dos usuários: concentrada
 -- em poucos países (EUA, Índia, Brasil, Indonésia...), e 0,05 para os
@@ -417,7 +416,7 @@ INSERT INTO tmp_empresa_real VALUES
 INSERT INTO steam_do_bedo.Empresa (nome, nome_fantasia)
 SELECT nome, fantasia FROM tmp_empresa_real ORDER BY nome;
 
--- Fictícias: o número no nome garante o UNIQUE (nome) (DEC-009).
+-- Fictícias: o número no nome garante o UNIQUE (nome).
 -- Patrocinam com peso 1, então somadas pesam como as marcas reais.
 INSERT INTO steam_do_bedo.Empresa (nome, nome_fantasia)
 SELECT f || ' ' || lpad(i::text, 4, '0') || ' '
@@ -451,7 +450,7 @@ ANALYZE tmp_patrocinador;
 -- sorteado pelo peso dos países para as fictícias) e segunda sede para
 -- ~15% (EUA, ou Brasil para quem já é dos EUA).
 -- id_nacional: formato do país (CNPJ no Brasil, EIN nos EUA, genérico nos
--- demais), derivado do nro para ser único no país (DEC-025).
+-- demais), derivado do nro para ser único no país.
 -- ---------------------------------------------------------------------
 WITH origem AS (
     SELECT e.nro,
@@ -479,7 +478,7 @@ ORDER BY nro, ddi;
 
 -- ---------------------------------------------------------------------
 -- Plataforma: 28 plataformas reais de streaming de jogos, de vídeo longo
--- (lives e VODs), curto (shorts) e mistas (DEC-020).
+-- (lives e VODs), curto (shorts) e mistas.
 -- Colunas só da carga:
 --   peso    participação no sorteio das contas dos usuários (mercado);
 --   formato 'longo', 'curto' ou 'misto' (YouTube, Bilibili...): define
@@ -487,7 +486,7 @@ ORDER BY nro, ddi;
 --   fim     data de encerramento (Mixer: 2020-07-22); nenhum canal, vídeo
 --           ou comentário é gerado depois dela.
 -- Datas de fundação aproximadas. qtd_users é calculado no INSERT, a
--- partir das contas preparadas abaixo (DEC-027, sem UPDATE final).
+-- partir das contas preparadas abaixo (sem UPDATE final).
 -- ---------------------------------------------------------------------
 CREATE TEMP TABLE tmp_plataforma (ord int, nome varchar(255), fundadora varchar(255), responsavel varchar(255),
                                   data_fund date, peso numeric, formato text, fim timestamptz) ON COMMIT DROP;
@@ -530,7 +529,7 @@ ANALYZE tmp_plat_cdf;
 -- Usuario: 500 mil × escala.
 -- nick único (palavra + palavra + número do usuário); email deriva do
 -- nick; telefone único (DDI do país + número do usuário com 9 dígitos,
--- até 13 caracteres), 15% sem telefone (é nulável, DEC-011).
+-- até 13 caracteres), 15% sem telefone (é nulável).
 -- País de residência sorteado pelo peso dos países (concentrado).
 -- data_nasc entre 1965 e 2012 (13 anos ou mais em 2025), mais jovens
 -- com mais frequência (público de jogos).
@@ -604,7 +603,7 @@ CROSS JOIN seed_param s;
 ANALYZE tmp_plat;
 
 -- nro_usuario: número da conta na plataforma, único por plataforma
--- (DEC-025), em ordem aleatória dentro da plataforma.
+--, em ordem aleatória dentro da plataforma.
 CREATE TEMP TABLE tmp_rank_conta ON COMMIT DROP AS
 SELECT p.nro AS nro_plataforma, c.id_usuario,
        row_number() OVER (PARTITION BY c.ord ORDER BY random()) AS rk
@@ -737,7 +736,7 @@ CREATE INDEX ON tmp_video (k_canal);
 ANALYZE tmp_video;
 
 -- Canal: qtd_visualizacoes = soma de visu_total dos seus vídeos, calculada
--- no INSERT (derivado; DEC-027).
+-- no INSERT (derivado).
 INSERT INTO steam_do_bedo.Canal (nome, nro_plataforma, tipo, data, descricao, qtd_visualizacoes, id_streamer)
 SELECT c.nome, c.nro_plataforma, c.tipo, c.data,
        'Canal de ' || c.nome || ': ' ||
@@ -755,8 +754,8 @@ UPDATE tmp_canal t SET id_canal = c.id_canal
 FROM steam_do_bedo.Canal c
 WHERE c.nome = t.nome AND c.nro_plataforma = t.nro_plataforma;
 
--- Video: id_video gerado pela função nativa gen_random_uuid() (UUID v4,
--- DEC-021). Como a ordem dos UUIDs muda a cada carga, nenhum sorteio
+-- Video: id_video gerado pela função nativa gen_random_uuid() (UUID v4).
+-- Como a ordem dos UUIDs muda a cada carga, nenhum sorteio
 -- seguinte percorre os vídeos em ordem de id_video: onde a ordem importa
 -- (Comentario), ela é (dataH, canal, número do vídeo), fixa entre cargas.
 -- A inserção segue a ordem de id_video, a da PK, para a árvore ser
@@ -812,7 +811,7 @@ ORDER BY v.id_video, s.id_usuario;
 -- ---------------------------------------------------------------------
 -- NivelCanal: 5 níveis (T8: nunca mais de 5) em ~55% dos canais; quanto
 -- mais popular, mais chance de ter membros (30% + 50% × percentil).
--- Valor mensal na moeda do país do membro (DEC-001), em degraus típicos.
+-- Valor mensal na moeda do país do membro, em degraus típicos.
 -- ---------------------------------------------------------------------
 CREATE TEMP TABLE tmp_canal_membros ON COMMIT DROP AS
 SELECT c.k, c.id_canal, c.nro_plataforma, c.id_streamer, c.pop,
@@ -876,7 +875,7 @@ ORDER BY m.id_canal, rc.id_usuario;
 -- Patrocinio: chance de patrocínio 3% + 90% × percentil^4 (quase só os
 -- canais do topo). Canais do topo têm vários patrocinadores. Marca
 -- sorteada por lei de potência sobre o peso (as grandes patrocinam mais).
--- Valor em USD (DEC-026), proporcional à popularidade, arredondado a 100.
+-- Valor em USD, proporcional à popularidade, arredondado a 100.
 -- ---------------------------------------------------------------------
 INSERT INTO steam_do_bedo.Patrocinio (nro_empresa, id_canal, valor)
 SELECT DISTINCT ON (pt.nro, c.id_canal)
@@ -901,7 +900,7 @@ ORDER BY pt.nro, c.id_canal;
 -- de até 60 dias, sem passar do limite da plataforma (T3 e T7).
 -- Autor: conta da plataforma do vídeo, por lei de potência (poucos
 -- usuários comentam muito).
--- Dois passos, por causa do UUID aleatório (DEC-021):
+-- Dois passos, por causa do UUID aleatório:
 --   1. tmp_comentario sorteia autor e texto percorrendo os vídeos numa
 --      ordem fixa entre cargas (dataH, canal, número do vídeo). Se a
 --      ordem fosse a dos UUIDs, os sorteios cairiam em comentários
@@ -965,7 +964,7 @@ ANALYZE steam_do_bedo.comentario;
 -- Valor: sorteado em USD (lognormal, mediana por forma: mecanismo 4,
 -- cartão 10, PayPal 12, BitCoin 40), convertido para a moeda do país de
 -- residência do autor (o valor que ele digitaria) e de volta para USD com
--- 2 casas, exatamente como o trigger T11 faria (DEC-026). Mínimo 0,01.
+-- 2 casas, exatamente como o trigger T11 faria. Mínimo 0,01.
 -- Status: lido 70%, recebido 20%, recusado 10% (sorteio em 10 posições).
 -- ---------------------------------------------------------------------
 CREATE TEMP TABLE tmp_doacao ON COMMIT DROP AS
@@ -975,7 +974,7 @@ SELECT c.id_video, c.seq AS seq_comentario, g.seq_pg, c.id_usuario, ca.nro_plata
        (ARRAY['lido','lido','lido','lido','lido','lido','lido','recebido','recebido','recusado'])
            [1 + floor(least(0.9999, s.u * 1.0) * 10)::int] AS status
 -- Lê tmp_comentario, e não a tabela real: ela está na ordem fixa entre
--- cargas, então o sorteio de quem doa não depende dos UUIDs (DEC-021).
+-- cargas, então o sorteio de quem doa não depende dos UUIDs.
 FROM tmp_comentario c
 CROSS JOIN LATERAL (SELECT random() AS u WHERE c.seq > 0) sel
 JOIN steam_do_bedo.Video v       ON v.id_video = c.id_video
@@ -1009,7 +1008,7 @@ FROM tmp_doacao
 ORDER BY id_video, seq_comentario, seq_pg;
 
 -- Especializações: cada doação entra em exatamente uma forma (T6).
--- TxID e IdPayPal derivam da chave da doação (únicos, DEC-025).
+-- TxID e IdPayPal derivam da chave da doação (únicos).
 INSERT INTO steam_do_bedo.BitCoin (id_video, seq_comentario, seq_doacao, TxID)
 SELECT id_video, seq_comentario, seq_pg,
        md5('btc:' || id_video || ':' || seq_comentario || ':' || seq_pg)
@@ -1136,7 +1135,7 @@ BEGIN
                       WHERE pu.nro_plataforma = c.nro_plataforma AND pu.id_usuario = c.id_streamer);
     IF v_qtd > 0 THEN v_falhas := v_falhas || format('%s canais sem conta do dono na plataforma', v_qtd); END IF;
 
-    -- proporção de comentários com doação (DEC-031: 1% a 5%)
+    -- proporção de comentários com doação (1% a 5%)
     SELECT 100.0 * (SELECT count(DISTINCT (id_video, seq_comentario)) FROM steam_do_bedo.doacao)
                  / nullif((SELECT count(*) FROM steam_do_bedo.comentario), 0)
     INTO v_pct;
@@ -1165,7 +1164,7 @@ VACUUM (ANALYZE) steam_do_bedo.conversao, steam_do_bedo.pais, steam_do_bedo.empr
     steam_do_bedo.doacao, steam_do_bedo.bitcoin, steam_do_bedo.paypal,
     steam_do_bedo.cartaocredito, steam_do_bedo.mecanismoplat;
 
--- Volume final por tabela (evidência para o decisions.md)
+-- Volume final por tabela (evidência para o decisoes_resumo.md)
 SELECT t.tabela, t.tuplas
 FROM (
               SELECT 1 AS o, 'Conversao' AS tabela, count(*) AS tuplas FROM steam_do_bedo.conversao

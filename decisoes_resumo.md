@@ -1,16 +1,17 @@
-# Stream do Bedo · Decisões de projeto
+# Stream do Bedo · Resumo das decisões de projeto
 
 Trabalho final de Projeto de Banco de Dados (UFF, 2026/2), em PostgreSQL 17.
-Este arquivo reúne as decisões do grupo e **o porquê de cada uma**. Sempre que
+Este arquivo resume as decisões do grupo e **o porquê de cada uma**. Sempre que
 possível, a justificativa parte de um dado do mundo real (com a fonte no fim do
 arquivo) e de uma conta: quantos registros o cenário prevê e se eles cabem no
 tipo escolhido.
 
-- Os comentários do código citam as decisões por número (`-- DEC-NNN`). Cada
-  seção diz quais números cobre. O registro completo, decisão por decisão, com
-  todas as medições, está na tag `v1.1.0` do repositório.
+- Cada decisão está explicada por extenso, com as alternativas avaliadas, as
+  medições e as limitações, em
+  [decisoes_detalhamento.md](decisoes_detalhamento.md). As seções dos dois
+  arquivos seguem a mesma ordem de assuntos.
 - As medições de desempenho estão em [benchmark.md](benchmark.md); a forma de
-  executar e a ordem dos arquivos (DEC-030), no [README.md](README.md).
+  executar e a ordem dos arquivos, no [README.md](README.md).
 
 **Limites dos tipos usados nas contas** (o `IDENTITY` começa em 1 e não dá a
 volta, então todo o intervalo positivo é utilizável):
@@ -61,14 +62,14 @@ volta, então todo o intervalo positivo é utilizável):
 | `EXPLAIN ANALYZE` antes e depois, cuidando do cache; está em Docker | Protocolo a frio: reinício do Postgres e `drop_caches` antes de cada medida | 13 |
 | Um bloco "cabe coisa para caramba"; com poucos dados o índice não faz diferença | Conta do bloco de 8 KB com os tamanhos reais | 11 e 12 |
 | Entrega: DDL, dados reproduzíveis, consultas; triggers em arquivo separado, para não travar a inserção | Triggers por último; o seed obedece às regras e calcula os derivados | 8 e 14 |
-| Decisões num documento curto; comentar bem o código | Este arquivo; o detalhe fica nos comentários `-- DEC-NNN` | — |
+| Decisões num documento curto; comentar bem o código | Este resumo; o detalhamento em `decisoes_detalhamento.md`; cada bloco do código diz o quê, por quê e os cuidados | — |
 | Converter pela moeda do país do usuário é decisão aceitável; registrar | Doação convertida pela moeda do país de residência de quem comentou | 7 |
 | Patrocínio sempre em dólar, porque vem de contrato externo | `Patrocinio.valor` em USD, sem conversão | 7 |
 | Doação: converter ao gravar (valor histórico) ou na consulta (valor corrigido); as duas estão certas; para escolher patrocínio, o valor corrigido diz mais | Doação: histórico. Membros: corrigido. O motivo de cada um está na seção 7 | 7 |
 | `qtd_visualizacoes` é a soma bruta das visualizações dos vídeos; não estoura com um tipo grande; manter por trigger | `BIGINT`, mantido pelo T1; a conta com o canal mais visto do mundo está na seção 4 | 4 e 8 |
 | O mesmo vale para `qtd_users` | `BIGINT`, mantido pelo T2 por comando; o custo de atualizar a plataforma a cada conta nova foi comparado com a recontagem periódica | 4 e 8.1 |
 
-## 3. Regra do trabalho e normalização (DEC-019)
+## 3. Regra do trabalho e normalização
 
 **O modelo relacional dado é otimizado, não alterado:**
 - **pode:** remodelar chaves (inclusive com surrogate), mudar tipos, criar
@@ -90,7 +91,7 @@ natural que se propagavam; não somam informação.
 | `Doacao` com `nick_usuario` na chave | O autor já é determinado pelo comentário: `(id_video, seq) → id_usuario`. Com o `nick`, a chave deixa de ser mínima (é superchave) e o autor fica gravado duas vezes, podendo divergir | `Doacao` sem o autor; chave `(id_video, seq_comentario, seq_pg)` | Chave mínima, sem dependência redundante |
 | `qtd_visualizacoes` e `qtd_users` | São redundância por definição (derivados), mas o modelo exige mantê-los | Não foram removidos; triggers T1 e T2 os mantêm sempre iguais à soma e à contagem | Redundância controlada, sem divergência |
 
-## 4. Cenário de volumetria com dados reais (DEC-020)
+## 4. Cenário de volumetria com dados reais
 
 O professor deixou o grupo escolher o tipo de vídeo e o volume, desde que o
 **mesmo cenário** justifique tudo: tipos de chave, seed e índices.
@@ -149,13 +150,13 @@ milhões de vídeos por dia**. O TikTok soma ~23 milhões por dia.
 
 | Coluna | Maior valor previsto | Conta contra o limite | Tipo | Por quê |
 |---|---:|---|---|---|
-| `Plataforma.nro` | ~10^3 | 28 plataformas reais no seed | `INTEGER` (DEC-005) | `SMALLINT` também caberia; o `INTEGER` não custa espaço extra porque as colunas vizinhas `BIGINT` exigem alinhamento de 8 bytes, e dá folga para escalas sintéticas |
-| `Empresa.nro` | ~6 × 10^8 | todas as empresas da base da D&B ocupariam 28% do `INTEGER` | `INTEGER` (DEC-008) | Cabe com folga, e `Empresa` não entra nas tabelas grandes |
-| `Usuario.id_usuario` | 6,0 × 10^9 hoje; 1,03 × 10^10 no pico populacional | a internet de hoje já é 2,8 vezes o `INTEGER`; o `BIGINT` só estoura com ~9 × 10^8 contas por pessoa | `BIGINT` (DEC-022) | `INTEGER` estoura já hoje |
-| `Canal.id_canal` | > 2,15 × 10^9 | o YouTube sozinho tem 1,14 × 10^8 canais (5% do `INTEGER`), mas no cenário todo criador de vídeo curto tem canal: só o TikTok tem 1,6 a 1,9 × 10^9 usuários (75% a 88% do `INTEGER`), e somam-se dezenas de plataformas | `BIGINT` (DEC-023) | `INTEGER` estoura no cenário |
-| `Video.id_video` | 1,9 × 10^15 no pior caso | 0,02% do `BIGINT` | `UUID` (DEC-021) | Capacidade sobra; o UUID é pela geração distribuída (seção 5) |
-| `Comentario.seq` (por vídeo) | ~1,6 × 10^7 | o recorde mundial ocupa 0,74% do `INTEGER`; o `SMALLINT` estouraria 480 vezes | `INTEGER` (DEC-024) | A numeração é por vídeo, então só importa o máximo de um vídeo |
-| `Doacao.seq_pg`, `seq_doacao`, `seq_plataforma` | ~10 | poucas doações por comentário | `INTEGER` (DEC-024) | Com `UUID` (16) + `INTEGER` (4) + `INTEGER` (4), a chave fecha em 24 bytes, sem bytes perdidos no alinhamento; com `BIGINT` seriam 32 |
+| `Plataforma.nro` | ~10^3 | 28 plataformas reais no seed | `INTEGER` | `SMALLINT` também caberia; o `INTEGER` não custa espaço extra porque as colunas vizinhas `BIGINT` exigem alinhamento de 8 bytes, e dá folga para escalas sintéticas |
+| `Empresa.nro` | ~6 × 10^8 | todas as empresas da base da D&B ocupariam 28% do `INTEGER` | `INTEGER` | Cabe com folga, e `Empresa` não entra nas tabelas grandes |
+| `Usuario.id_usuario` | 6,0 × 10^9 hoje; 1,03 × 10^10 no pico populacional | a internet de hoje já é 2,8 vezes o `INTEGER`; o `BIGINT` só estoura com ~9 × 10^8 contas por pessoa | `BIGINT` | `INTEGER` estoura já hoje |
+| `Canal.id_canal` | > 2,15 × 10^9 | o YouTube sozinho tem 1,14 × 10^8 canais (5% do `INTEGER`), mas no cenário todo criador de vídeo curto tem canal: só o TikTok tem 1,6 a 1,9 × 10^9 usuários (75% a 88% do `INTEGER`), e somam-se dezenas de plataformas | `BIGINT` | `INTEGER` estoura no cenário |
+| `Video.id_video` | 1,9 × 10^15 no pior caso | 0,02% do `BIGINT` | `UUID` | Capacidade sobra; o UUID é pela geração distribuída (seção 5) |
+| `Comentario.seq` (por vídeo) | ~1,6 × 10^7 | o recorde mundial ocupa 0,74% do `INTEGER`; o `SMALLINT` estouraria 480 vezes | `INTEGER` | A numeração é por vídeo, então só importa o máximo de um vídeo |
+| `Doacao.seq_pg`, `seq_doacao`, `seq_plataforma` | ~10 | poucas doações por comentário | `INTEGER` | Com `UUID` (16) + `INTEGER` (4) + `INTEGER` (4), a chave fecha em 24 bytes, sem bytes perdidos no alinhamento; com `BIGINT` seriam 32 |
 | `Video.visu_total` | 1,66 × 10^10 (Baby Shark) | 7,7 vezes o `INTEGER` | `BIGINT` | `INTEGER` já estoura com o vídeo mais visto de hoje |
 | `Canal.qtd_visualizacoes` | 2,92 × 10^11 (T-Series) | 136 vezes o `INTEGER`; o `BIGINT` comporta 3 × 10^7 canais iguais à T-Series | `BIGINT` | É a soma bruta pedida pelo professor; "com um valor bem grande não estoura" |
 | `Video.visu_simul` | 8,06 × 10^6 (recorde) | 0,38% do `INTEGER` | `BIGINT` | O `INTEGER` bastaria. Ficou `BIGINT` por ser o mesmo domínio de `visu_total`, com quem é comparado no `CHECK (visu_simul <= visu_total)` |
@@ -170,7 +171,7 @@ milhões de vídeos por dia**. O TikTok soma ~23 milhões por dia.
 o Caribe dividem o +1), então o seed usa o prefixo que distingue o país, como
 1613 para o Canadá.
 
-## 5. Chaves (DEC-005, 008, 014, 015, 017, 021 a 024)
+## 5. Chaves
 
 ### 5.1 Resumo
 
@@ -208,7 +209,7 @@ E ainda há o `UNIQUE (id_canal, titulo, dataH)` como segunda barreira. O índic
 desse `UNIQUE` começa por `id_canal`, então ele também atende "vídeos de um
 canal", a vantagem que a chave composta daria.
 
-**Custo medido** (banco descartável, 1 milhão de linhas, DEC-021):
+**Custo medido** (banco descartável, 1 milhão de linhas):
 
 | Variante | `Video` (tabela + PK) | `INSERT` de 1 milhão | Índice da PK de `Comentario` (1 milhão) |
 |---|---:|---:|---:|
@@ -244,7 +245,7 @@ foi tratado como **entidade fraca** de `Video`:
 com chave `(id_video, seq_comentario, seq_pg)`.
 
 Para confirmar que dar um id próprio ao comentário não compensaria, o grupo
-mediu quatro chaves com 1 milhão de comentários (DEC-017):
+mediu quatro chaves com 1 milhão de comentários:
 
 | Variante | PK | Tabela | Índices | Total | `INSERT` |
 |---|---|---:|---:|---:|---:|
@@ -276,7 +277,7 @@ Em `Comentario` o tamanho não muda: o `BIGINT` ocupa o espaço que o alinhament
 de `dataH` (8 bytes) já desperdiçava. O ganho principal não é espaço, é
 estabilidade: renomear um usuário passa a atualizar uma linha, e não milhões.
 
-## 6. Constraints (item mandatório 2; DEC-006, 009 a 011, 016, 025)
+## 6. Constraints (item mandatório 2)
 
 | Constraint | Regra de negócio | Custo |
 |---|---|---|
@@ -300,7 +301,7 @@ estabilidade: renomear um usuário passa a atualizar uma linha, e não milhões.
 Os índices de `PRIMARY KEY` e `UNIQUE` são constraints e **não contam** no teto
 de 5 índices de apoio (seção 11).
 
-## 7. Moeda (DEC-001 a 004, 026)
+## 7. Moeda
 
 | Receita | Moeda na origem | Quando converte para USD | Valor resultante | Por quê |
 |---|---|---|---|---|
@@ -334,7 +335,7 @@ valor em moeda local se perde, porque não se pode criar coluna (seção 3).
 - não há histórico de patrocínio nem de membros, então só os vigentes entram;
 - `k` nulo devolve todos os canais.
 
-## 8. Triggers (item mandatório 5; DEC-027)
+## 8. Triggers (item mandatório 5)
 
 | ID | Regra | Origem | Como |
 |---|---|---|---|
@@ -405,7 +406,7 @@ transações longas, a recontagem periódica seria melhor: tira toda a disputa d
 escrita, e a defasagem não afeta o item 12. A troca vale quando a maior
 plataforma chegar a centenas de cadastros por segundo.
 
-## 9. Views (item mandatório 3; DEC-028): 4 de 5
+## 9. Views (item mandatório 3): 4 de 5
 
 | View | Tipo | Atende | Por quê | Medido |
 |---|---|---|---|---|
@@ -423,7 +424,7 @@ plataforma chegar a centenas de cadastros por segundo.
 - **V5 (item 12) medida e descartada:** cairia de ~60 para ~10 ms numa resposta
   de 28 linhas, mas o item 12 deixaria de ser exato até o próximo refresh.
 
-## 10. Consultas (item mandatório 6; DEC-029, 033, 035)
+## 10. Consultas (item mandatório 6)
 
 | Item | Function | Filtro opcional | Lê | Ponto de atenção |
 |---|---|---|---|---|
@@ -456,7 +457,7 @@ plataforma chegar a centenas de cadastros por segundo.
 | Com filtro | Mostra a posição no ranking geral | "1º de 1" responde errado |
 | Validação | Comparada com uma contagem independente | 0 divergências |
 
-## 11. Índices de apoio (item mandatório 4; DEC-034): 5 de 5
+## 11. Índices de apoio (item mandatório 4): 5 de 5
 
 | # | Índice | Atende | Efeito medido a frio | Custo de `INSERT` |
 |---|---|---|---|---|
@@ -516,7 +517,7 @@ PostgreSQL lê páginas de 8 KB. Pelos tamanhos reais da carga:
 - **Com 5 milhões,** a tabela tem 464 MB, 3,5 vezes o `shared_buffers`. A
   diferença entre ler 54 e 4.040 páginas do disco aparece no tempo.
 
-## 12. Dados (item mandatório 1; DEC-031)
+## 12. Dados (item mandatório 1)
 
 O professor autorizou ultrapassar a faixa de 1.000 a 10.000 registros: "povoar o
 máximo [...] centenas de milhares de tuplas", com distribuição desbalanceada.
@@ -553,7 +554,7 @@ algumas centenas de registros; as demais tabelas não mudam.
 | Semente fixa, banco vazio exigido, uma transação, conferência final das regras dos triggers antes do `COMMIT` | Reprodutível pelo professor. Mudam só os UUIDs dos vídeos (o `gen_random_uuid()` não obedece à semente) e o que deriva deles: TxID, IdPayPal e número do cartão |
 | Escala ajustável (`make setup ESCALA=0.1`) | A carga completa leva de 6 a 9 minutos; a escala 0,1 roda em menos de 1 minuto |
 
-## 13. Medição (DEC-032)
+## 13. Medição
 
 Cada medida a frio é feita depois de:
 1. reiniciar o Postgres, o que esvazia o `shared_buffers`;
@@ -574,7 +575,7 @@ resultado completo está em [benchmark.md](benchmark.md).
 | 2. PL/pgSQL: functions, triggers, views e outros | `views.sql`, `functions.sql` (com os índices de apoio no fim) e `triggers.sql` |
 | 3. Dados para inserção | `seed.sql` (gera os dados; o arquivo é pequeno) |
 | 4. Chamadas das consultas e functions para teste | `tests.sql` |
-| 5. PDF de decisões | este arquivo |
+| 5. PDF de decisões | este arquivo (o detalhamento completo em `decisoes_detalhamento.md`) |
 
 Ordem de execução: `ddl` → `seed` → `views` → `functions` → `triggers` →
 `tests`, explicada no [README.md](README.md).

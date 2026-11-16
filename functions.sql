@@ -6,23 +6,21 @@
 -- O que faz: cria uma function por consulta do enunciado (itens 1 a 12,
 -- o 12 é o desafio). Cada filtro opcional é um parâmetro com DEFAULT NULL.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- Ordem de execução: ddl.sql -> seed.sql -> views.sql ->
 -- functions.sql -> triggers.sql -> tests.sql.
 -- Depende das views V1 a V4 (views.sql).
 --
--- DECs: 001 a 004 (premissas de cada item), 019 (sem p_data_ref), 021 a
--- 023 (chaves), 026 (doação em USD), 028 (views), 029 (ajustes), 033
--- (reescrita para desempenho) e 035 (item 12).
+-- As premissas de cada item, a reescrita para desempenho e a
+-- interpretação do item 12 estão no decisoes_detalhamento.md.
 --
 -- Padrão das functions:
 --   * LANGUAGE sql STABLE: o planejador expande a function dentro da
 --     consulta que a chama (inlining). Com o parâmetro constante, o
 --     padrão "p IS NULL OR col = p" vira "col = p" e pode usar índice.
 --     Por isso só o item 12 é plpgsql: a posição global obriga a agregar
---     todas as plataformas de qualquer jeito, e ele valida os parâmetros
---     (DEC-033, DEC-035).
+--     todas as plataformas de qualquer jeito, e ele valida os parâmetros.
 --   * As consultas que listam canais devolvem nome E plataforma: o nome
---     só é único por plataforma (DEC-014).
+--     só é único por plataforma.
 --   * Itens 2, 3 e 8 a 11 leem views materializadas (V3, V4): o resultado
 --     reflete o último sp_refresh_views(). Itens 1, 4 a 7 e 12 leem as
 --     tabelas base (direto ou pelas views virtuais V1, V2) e são exatos.
@@ -56,11 +54,11 @@ LANGUAGE sql STABLE AS $$
                count(*)                              AS qtd,
                coalesce(sum(v.visu_total), 0)::BIGINT AS soma
         FROM steam_do_bedo.canal c
-        JOIN steam_do_bedo.video v ON v.id_canal = c.id_canal          -- DEC-015
+        JOIN steam_do_bedo.video v ON v.id_canal = c.id_canal
         WHERE p_plataforma IS NULL OR c.nro_plataforma = p_plataforma  -- filtro opcional
         GROUP BY c.id_streamer
     ) a
-    JOIN steam_do_bedo.usuario u ON u.id_usuario = a.id_streamer        -- DEC-022
+    JOIN steam_do_bedo.usuario u ON u.id_usuario = a.id_streamer
     ORDER BY a.qtd DESC, u.nick;
 $$;
 
@@ -70,8 +68,8 @@ $$;
 -- Como: lê a V3 (contagens prontas por vídeo). Com filtro, o nome acha o
 --   canal pelo UNIQUE (nome, nro_plataforma) e os vídeos do canal pelo
 --   índice da V3, que começa por id_canal.
--- DEC-028, DEC-033 (antes agregava Comentario inteira e só depois
---   filtrava o canal)
+-- Reescrita antes dos índices: a versão anterior agregava Comentario
+--   inteira e só depois filtrava o canal.
 -- Cuidado: contagem do último refresh da V3. Vídeos sem comentário
 --   aparecem com zero. Desempate por título.
 -- ---------------------------------------------------------------------
@@ -108,9 +106,9 @@ $$;
 --   Com o parâmetro constante, o planejador elimina o ramo que não serve
 --   (a condição vira falsa na hora de planejar), então cada chamada roda
 --   só o plano bom para o seu caso.
--- DEC-028, DEC-033 (medido: sem filtro 3,0 s -> 1,5 s a quente com este
---   formato; a versão anterior juntava Canal à V3 por merge join e
---   reagrupava 1,25 mi de linhas)
+-- Medido: sem filtro 3,0 s -> 1,5 s a quente com este formato; a versão
+--   anterior juntava Canal à V3 por merge join e reagrupava 1,25 mi de
+--   linhas.
 -- Cuidado: canal sem vídeo aparece com 0 vídeos e média nula. Contagem do
 --   último refresh da V3. Os dois ramos precisam devolver as mesmas
 --   colunas na mesma ordem.
@@ -132,7 +130,7 @@ RETURNS TABLE (
                coalesce(a.tot, 0)::BIGINT, coalesce(a.n, 0)::BIGINT,
                round(a.tot::NUMERIC / nullif(a.n, 0), 2)
         FROM steam_do_bedo.canal cn
-        JOIN steam_do_bedo.usuario u ON u.id_usuario = cn.id_streamer        -- DEC-022
+        JOIN steam_do_bedo.usuario u ON u.id_usuario = cn.id_streamer
         LEFT JOIN (SELECT id_canal, sum(qtd_total) AS tot, count(*) AS n
                    FROM steam_do_bedo.mv_interacoes_video                    -- V3
                    GROUP BY id_canal) a ON a.id_canal = cn.id_canal
@@ -158,7 +156,7 @@ $$;
 -- Como: soma as doações de cada comentário (um comentário pode ter mais
 --   de uma doação) e tira a média por canal. Lê a V1, que já exclui as
 --   recusadas e traz a plataforma: o filtro desce para Canal.
--- DEC-003, DEC-026 (USD), DEC-028
+-- Valores em USD (gravados assim pelo T11).
 -- Cuidado: só canais com doação recebida aparecem. Desempate por nome.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_canais_pela_media_doacoes_por_comentario(INTEGER);
@@ -193,7 +191,7 @@ $$;
 -- Como: uma linha por (canal, empresa); a PK de Patrocinio é
 --   (nro_empresa, id_canal), então o filtro por empresa usa o UNIQUE
 --   (nome) de Empresa e o prefixo da PK de Patrocinio.
--- DEC-026: valor em USD (contrato externo).
+-- Valor em USD (contrato externo).
 -- Cuidado: agrupa por id (antes agrupava por nome, o que juntava canais
 --   homônimos de plataformas diferentes). Ordena pelo valor.
 -- ---------------------------------------------------------------------
@@ -210,7 +208,7 @@ RETURNS TABLE (
     SELECT cn.nome, cn.nro_plataforma, e.nome, p.valor
     FROM steam_do_bedo.patrocinio p
     JOIN steam_do_bedo.empresa e ON e.nro = p.nro_empresa
-    JOIN steam_do_bedo.canal cn  ON cn.id_canal = p.id_canal               -- DEC-014
+    JOIN steam_do_bedo.canal cn  ON cn.id_canal = p.id_canal
     WHERE p_nome_empresa IS NULL OR e.nome = p_nome_empresa
     ORDER BY p.valor DESC, cn.nome, e.nome;
 $$;
@@ -219,10 +217,11 @@ $$;
 -- 6. De quantos canais cada usuário é membro e quanto desembolsa por mês,
 --    em moeda local e em USD. Filtro opcional: nick do usuário.
 -- Como: lê a V2 (inscrições com o valor convertido).
--- DEC-001; DEC-019 (sem p_data_ref: a data de inscrição saiu do modelo)
+-- Sem data de referência: o modelo não tem data de inscrição, e só os
+--   membros vigentes ficam no banco.
 -- Cuidado: o filtro por nick acha o usuário pelo UNIQUE (nick); achar as
 --   inscrições dele precisa de um índice em Inscricao (id_membro), porque
---   a PK começa por id_canal (DEC-034).
+--   a PK começa por id_canal.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario(VARCHAR);
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_qtd_canais_e_gasto_mensal_por_usuario(VARCHAR, DATE);
@@ -251,7 +250,6 @@ $$;
 -- Como: lê a V1. Com filtro, o nome desce para Canal (UNIQUE (nome,
 --   nro_plataforma)), os vídeos vêm pelo índice que começa por id_canal e
 --   as doações pelo prefixo da PK (id_video, ...).
--- DEC-003, DEC-026, DEC-028
 -- Cuidado: o mesmo nome pode existir em mais de uma plataforma: uma linha
 --   por canal.
 -- ---------------------------------------------------------------------
@@ -273,8 +271,8 @@ $$;
 
 -- ---------------------------------------------------------------------
 -- 8. Top-k canais que mais recebem patrocínio (USD).
--- Como: top-k sobre a V4. p_k nulo devolve todos (LIMIT NULL, DEC-002).
--- DEC-028; dado do último refresh.
+-- Como: top-k sobre a V4. p_k nulo devolve todos (LIMIT NULL).
+-- Cuidado: dado do último refresh da V4.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_patrocinio(INT);
 
@@ -296,7 +294,8 @@ $$;
 -- ---------------------------------------------------------------------
 -- 9. Top-k canais que mais recebem aportes de membros (USD por mês).
 -- Como: top-k sobre a V4 (que soma a V2 por canal).
--- DEC-002, DEC-019 (sem p_data_ref), DEC-028
+-- Sem data de referência: o modelo não tem data de inscrição, e só os
+--   membros vigentes ficam no banco.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_aportes_de_membros(INT);
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_aportes_de_membros(INT, DATE);
@@ -320,7 +319,6 @@ $$;
 -- 10. Top-k canais que mais receberam doações, considerando todos os
 --     vídeos (USD).
 -- Como: top-k sobre a V4 (que soma a V1 por canal).
--- DEC-003, DEC-026, DEC-028
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_doacoes_recebidas(INT);
 
@@ -343,8 +341,7 @@ $$;
 -- ---------------------------------------------------------------------
 -- 11. Top-k canais que mais faturam: patrocínio + membros + doações, USD.
 -- Como: top-k sobre a V4.
--- DEC-004 (fecha o ponto em aberto: a doação agora está em USD, DEC-026),
--- DEC-019, DEC-028
+-- As três fontes já estão em USD (a doação é convertida no INSERT).
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_faturamento(INT);
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_canais_por_faturamento(INT, DATE);
@@ -368,7 +365,7 @@ $$;
 -- ---------------------------------------------------------------------
 -- 12. DESAFIO: top-k plataformas pela quantidade de streamers E de
 --     canais. Filtro opcional: plataforma.
--- Interpretação (DEC-035, que substitui a parte do item 12 da DEC-029):
+-- Interpretação (decidida antes do código; ver decisoes_detalhamento.md):
 --   * streamer da plataforma = streamer DONO de ao menos um canal nela,
 --     contado uma vez só (COUNT(DISTINCT id_streamer)). Ter só conta
 --     (PlataformaUsuario) não publica nada e não traz público; participar
@@ -405,8 +402,7 @@ $$;
 --   global obriga a agregar todas as plataformas antes de filtrar, então a
 --   expansão inline não traria ganho; e plpgsql permite rejeitar parâmetros
 --   inválidos com mensagem clara. O custo é ler Canal inteira (~36 mil
---   linhas, 5 MB): medido na DEC-035.
--- DEC-035 (interpretação, desempenho e validação), DEC-029.
+--   linhas, 5 MB), medido no benchmark.md.
 -- ---------------------------------------------------------------------
 DROP FUNCTION IF EXISTS steam_do_bedo.sp_obter_top_k_plataformas_por_streamers_e_canais(INT, INTEGER);
 
@@ -475,27 +471,27 @@ $$;
 -- O que faz: cria os índices secundários escolhidos pelo grupo, além dos
 -- criados automaticamente por PRIMARY KEY e UNIQUE.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- Ordem de execução: ddl.sql -> seed.sql -> views.sql ->
 -- functions.sql -> triggers.sql -> tests.sql.
 -- Depois da carga: criar o índice sobre a tabela pronta é mais rápido do
 -- que mantê-lo linha a linha durante a inserção.
 --
 -- Teto de 5 índices de apoio (enunciado, item 4). O índice de view
--- materializada CONTA no teto (DEC-028):
+-- materializada CONTA no teto:
 --   1. ux_mv_interacoes_video (id_canal, id_video)   views.sql, V3
 --   2. ux_mv_faturamento_canal (id_canal)            views.sql, V4
 --   3. idx_inscricao_id_membro                       este arquivo
 --   4. idx_canal_id_streamer                         este arquivo
 --   5. idx_video_id_canal_cobertura                  este arquivo
--- Medido e descartado: Canal (nro_plataforma), da DEC-018 (sem ganho a
--- frio; ver DEC-034). Hash foi medido no lugar dos B-tree de igualdade
+-- Medido e descartado: Canal (nro_plataforma), de uma versão anterior
+-- (sem ganho a frio). Hash foi medido no lugar dos B-tree de igualdade
 -- (Inscricao.id_membro, Canal.id_streamer) e não trouxe vantagem.
 --
--- Metodologia (professor, 07:03-08:16; DEC-034): inventário dos predicados
+-- Metodologia (professor, 07:03-08:16): inventário dos predicados
 -- das functions -> distribuição de cada coluna em
 -- pg_stats -> tipo do índice pelo tipo do predicado -> medida a frio com
 -- e sem o índice e do overhead de inserção. Os números estão no
--- benchmark.md e na DEC-034 (decisions.md).
+-- benchmark.md e no decisoes_detalhamento.md.
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -516,8 +512,8 @@ DROP INDEX IF EXISTS steam_do_bedo.idx_video_id_canal_cobertura;
 --   e o plano varre a tabela inteira. Predicado de igualdade muito
 --   seletivo (poucas inscrições por usuário). Também atende a FK
 --   inscricao_id_membro_fkey quando um Usuario é removido.
--- DEC-034 (substitui idx_inscricao_nick_membro da DEC-018: a chave agora
---   é id_usuario, DEC-022)
+-- Substitui idx_inscricao_nick_membro, de uma versão anterior: a chave
+--   do membro agora é id_usuario.
 -- Medido (a frio, mediana de 5): item 6 com filtro 160 -> 7 ms; páginas
 --   lidas 4.040 -> 54. Overhead de INSERT em lote: +59% (300 mil linhas,
 --   ordem aleatória); 10 MB na tabela inteira.
@@ -529,7 +525,7 @@ DROP INDEX IF EXISTS steam_do_bedo.idx_video_id_canal_cobertura;
 --   quando) e a busca por usuário é leitura frequente.
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_inscricao_id_membro
-    ON steam_do_bedo.inscricao (id_membro);                    -- DEC-034
+    ON steam_do_bedo.inscricao (id_membro);
 
 -- ---------------------------------------------------------------------
 -- 4. idx_canal_id_streamer
@@ -538,14 +534,13 @@ CREATE INDEX idx_inscricao_id_membro
 --   atende as verificações dos triggers T9 e T10 do lado de StreamerPais e
 --   PlataformaUsuario ("este usuário tem canal?") e a FK
 --   canal_id_streamer_fkey. Igualdade, poucos canais por streamer.
--- DEC-034
 -- Medido: item 3 com filtro, páginas lidas 1.554 -> 892; a quente 9 -> 1,3
 --   ms (a frio a diferença some no ruído, ~150 ms nos dois). 736 kB.
 --   Overhead de INSERT: +17% numa tabela de escrita rara.
 -- Hash x B-tree: mesmas páginas lidas, mesmo tempo, hash maior: B-tree.
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_canal_id_streamer
-    ON steam_do_bedo.canal (id_streamer);                      -- DEC-034
+    ON steam_do_bedo.canal (id_streamer);
 
 -- ---------------------------------------------------------------------
 -- 5. idx_video_id_canal_cobertura
@@ -558,7 +553,6 @@ CREATE INDEX idx_canal_id_streamer
 --   tabela (correlação física de id_canal = 0,01, porque a ordem física é a
 --   do UUID, e não a do canal). Com o INCLUDE, a contagem e a soma saem
 --   só do índice (Index Only Scan), sem visitar a tabela.
--- DEC-034
 -- Medido: item 1 com plataforma pequena (Kick, 3,5% dos canais): 587 ->
 --   341 ms a frio e 257 -> 22 ms a quente; páginas 25.526 -> 9.530.
 --   38 MB; overhead de INSERT em Video +9%.
@@ -569,12 +563,12 @@ CREATE INDEX idx_canal_id_streamer
 --     pequenas, que são a maioria das 28.
 --   * Index-only scan depende do visibility map: precisa de VACUUM em dia
 --     numa tabela com inserção contínua.
---   * Substitui Canal (nro_plataforma), da DEC-018, que foi medido de novo e
+--   * Substitui Canal (nro_plataforma), de uma versão anterior, que foi medido de novo e
 --     não teve ganho: Canal tem 951 páginas e é lida em milissegundos; o
 --     custo dos itens 1, 4 e 12 estava em Video.
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_video_id_canal_cobertura
-    ON steam_do_bedo.video (id_canal) INCLUDE (visu_total);    -- DEC-034
+    ON steam_do_bedo.video (id_canal) INCLUDE (visu_total);
 
 ANALYZE steam_do_bedo.inscricao;
 ANALYZE steam_do_bedo.canal;

@@ -6,12 +6,10 @@
 -- O que faz: cria 2 views virtuais (V1, V2), 2 materializadas (V3, V4),
 -- os índices UNIQUE das materializadas e a procedure de refresh.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- Ordem de execução: ddl.sql -> seed.sql -> views.sql ->
 -- functions.sql -> triggers.sql -> tests.sql.
 -- Vem depois da carga porque as views materializadas são preenchidas na
 -- criação; e antes das procedures, que as usam.
---
--- DEC-028 (views), DEC-026 (moeda), DEC-001 (membros em USD).
 --
 -- Virtual x materializada:
 --   * View virtual (CREATE VIEW) é só uma consulta salva. Cada uso a
@@ -23,10 +21,10 @@
 --     imediata, mas o dado fica parado até o REFRESH. Serve para agregações
 --     caras sobre tabelas grandes, quando um atraso é aceitável.
 --
--- Teto de índices (DEC-028): o grupo decidiu que o índice de view
+-- Teto de índices: o grupo decidiu que o índice de view
 -- materializada CONTA no teto de 5 índices de apoio do item 4. Os dois
 -- índices UNIQUE abaixo (exigidos pelo REFRESH ... CONCURRENTLY) somam 2
--- dos 5; sobram 3 para as tabelas base (parte 2 do functions.sql, DEC-034).
+-- dos 5; sobram 3 para as tabelas base (parte 2 do functions.sql).
 -- =====================================================================
 
 \set ON_ERROR_STOP on
@@ -44,8 +42,8 @@ DROP VIEW IF EXISTS steam_do_bedo.vw_doacao_recebida;
 --   com o canal e a plataforma de cada uma. O valor já está em USD.
 -- Por quê: a regra "doação recusada não conta" e o caminho doação ->
 --   vídeo -> canal se repetiam nos itens 4, 7, 10 e 11 (e na V4). Fica
---   num lugar só (DEC-003).
--- DEC-028; DEC-026 (valor gravado em USD pelo T11, sem conversão aqui)
+--   num lugar só.
+-- valor gravado em USD pelo T11, sem conversão aqui
 -- Cuidado: virtual de propósito. Os filtros das functions (canal por nome,
 --   plataforma) descem para dentro da view e usam os índices das tabelas
 --   base; uma materializada perderia isso e ficaria desatualizada a cada
@@ -58,24 +56,24 @@ SELECT d.id_video,
        v.id_canal,
        cn.nome          AS nome_canal,
        cn.nro_plataforma,
-       d.valor          AS valor_usd,      -- DEC-026: gravado em USD
+       d.valor          AS valor_usd,      -- gravado em USD
        d.status
 FROM steam_do_bedo.doacao d
 JOIN steam_do_bedo.video v  ON v.id_video = d.id_video
 JOIN steam_do_bedo.canal cn ON cn.id_canal = v.id_canal
-WHERE d.status <> 'recusado';           -- DEC-003: recusada não foi recebida
+WHERE d.status <> 'recusado';           -- recusada não foi recebida
 
 COMMENT ON VIEW steam_do_bedo.vw_doacao_recebida IS
-    'V1: doações não recusadas, em USD, com canal e plataforma. DEC-028';
+    'V1: doações não recusadas, em USD, com canal e plataforma.';
 
 -- ---------------------------------------------------------------------
 -- V2 · vw_inscricao_usd (virtual)
 -- O quê: cada inscrição vigente com o valor mensal do nível na moeda do
 --   país de residência do membro e convertido para USD.
--- Por quê: a conversão dos membros (DEC-001) se repetia nos itens 6, 9 e
+-- Por quê: a conversão dos membros se repetia nos itens 6, 9 e
 --   11 e na V4. Fica num lugar só.
--- DEC-028; DEC-001; DEC-025 (país de residência obrigatório: o fator
---   sempre existe, sem o COALESCE(..., 1) da versão anterior)
+-- O país de residência é obrigatório (NOT NULL), então o fator
+--   sempre existe, sem o COALESCE(..., 1) da versão anterior.
 -- Cuidado: valor_usd não é arredondado aqui; as functions arredondam o
 --   total, para não acumular erro de arredondamento por membro.
 -- ---------------------------------------------------------------------
@@ -95,17 +93,16 @@ JOIN steam_do_bedo.pais p       ON p.ddi = u.pais_residencia
 JOIN steam_do_bedo.conversao cv ON cv.moeda = p.moeda;
 
 COMMENT ON VIEW steam_do_bedo.vw_inscricao_usd IS
-    'V2: inscrições com o valor do nível em moeda local e em USD. DEC-028';
+    'V2: inscrições com o valor do nível em moeda local e em USD.';
 
 -- ---------------------------------------------------------------------
 -- V3 · mv_interacoes_video (materializada)
 -- O quê: por vídeo, quantos comentários online, offline e no total.
 --   Inclui vídeos sem comentário (zeros), que contam na média do item 3.
 -- Por quê: Comentario é a maior tabela (5 mi de linhas no seed) e
---   contá-la inteira domina o tempo dos itens 2 e 3 (DEC-018, DEC-033).
+--   contá-la inteira domina o tempo dos itens 2 e 3.
 --   A contagem de comentários é uma métrica de ranking; um atraso de
 --   algumas horas não muda a decisão de quem usa o sistema.
--- DEC-028
 -- Índice: UNIQUE (id_canal, id_video). É obrigatório para o REFRESH ...
 --   CONCURRENTLY (que não bloqueia leituras) e, por ter id_canal na
 --   frente, também atende "vídeos de um canal" (item 2 com filtro) e
@@ -126,10 +123,10 @@ LEFT JOIN steam_do_bedo.comentario c ON c.id_video = v.id_video
 GROUP BY v.id_canal, v.id_video;
 
 CREATE UNIQUE INDEX ux_mv_interacoes_video
-    ON steam_do_bedo.mv_interacoes_video (id_canal, id_video);   -- DEC-028 (conta no teto)
+    ON steam_do_bedo.mv_interacoes_video (id_canal, id_video);   -- conta no teto
 
 COMMENT ON MATERIALIZED VIEW steam_do_bedo.mv_interacoes_video IS
-    'V3: comentários online, offline e total por vídeo (itens 2 e 3). Refresh periódico. DEC-028';
+    'V3: comentários online, offline e total por vídeo (itens 2 e 3). Refresh periódico.';
 
 -- ---------------------------------------------------------------------
 -- V4 · mv_faturamento_canal (materializada)
@@ -140,13 +137,13 @@ COMMENT ON MATERIALIZED VIEW steam_do_bedo.mv_interacoes_video IS
 --   chamada agrega Patrocinio, Inscricao (com conversão) e Doacao
 --   inteiras. O sistema existe para escolher que canal patrocinar
 --   (professor, 14:50); para isso, um atraso de horas é aceitável.
--- DEC-028; usa V1 e V2, então herda as regras de status e de moeda.
+-- Usa V1 e V2, então herda as regras de status e de moeda.
 -- Índice: UNIQUE (id_canal), exigido pelo REFRESH CONCURRENTLY. Conta no
 --   teto de 5. O top-k em si ordena ~30 mil linhas (uma por canal
 --   com receita), o que custa milissegundos sem índice próprio.
 -- Refresh: periódico, junto com a V3 (sp_refresh_views).
 -- Cuidado: cada fonte é agregada por canal antes de ser combinada; um JOIN
---   direto entre as três tabelas multiplicaria as linhas (DEC-004).
+--   direto entre as três tabelas multiplicaria as linhas.
 -- ---------------------------------------------------------------------
 CREATE MATERIALIZED VIEW steam_do_bedo.mv_faturamento_canal AS
 WITH pat AS (
@@ -180,20 +177,20 @@ LEFT JOIN doa ON doa.id_canal = c.id_canal
 WHERE pat.id_canal IS NOT NULL OR mem.id_canal IS NOT NULL OR doa.id_canal IS NOT NULL;
 
 CREATE UNIQUE INDEX ux_mv_faturamento_canal
-    ON steam_do_bedo.mv_faturamento_canal (id_canal);            -- DEC-028 (conta no teto)
+    ON steam_do_bedo.mv_faturamento_canal (id_canal);            -- conta no teto
 
 COMMENT ON MATERIALIZED VIEW steam_do_bedo.mv_faturamento_canal IS
-    'V4: faturamento por canal em USD (itens 8 a 11). Refresh periódico. DEC-028';
+    'V4: faturamento por canal em USD (itens 8 a 11). Refresh periódico.';
 
 -- ---------------------------------------------------------------------
 -- sp_refresh_views(): atualiza as duas materializadas.
 -- O quê: REFRESH MATERIALIZED VIEW CONCURRENTLY na V3 e na V4.
--- Por quê: estratégia de refresh periódico da DEC-028. CONCURRENTLY
+-- Por quê: as materializadas são atualizadas periodicamente. CONCURRENTLY
 --   recalcula num lado e aplica só a diferença, sem bloquear quem está
 --   lendo a view (por isso o índice UNIQUE).
 -- Cuidado: CONCURRENTLY é mais lento que o refresh comum (compara as
 --   duas versões) e não funciona numa view nunca preenchida. O custo foi
---   medido no benchmark.md (DEC-034, overhead de escrita).
+--   medido no benchmark.md (overhead de escrita).
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE steam_do_bedo.sp_refresh_views()
 LANGUAGE plpgsql AS $$

@@ -4,9 +4,9 @@
 --
 -- O que faz: cria as functions de trigger e os triggers T1 a T11, que
 -- mantêm a consistência exigida pelo minimundo e que não cabe em
--- PRIMARY KEY, UNIQUE, FOREIGN KEY ou CHECK (DEC-027).
+-- PRIMARY KEY, UNIQUE, FOREIGN KEY ou CHECK.
 --
--- Ordem de execução (DEC-030): ddl.sql -> seed.sql -> views.sql ->
+-- Ordem de execução: ddl.sql -> seed.sql -> views.sql ->
 -- functions.sql -> triggers.sql -> tests.sql.
 -- Este arquivo roda DEPOIS da carga, como o professor orientou (11:30:
 -- "vou colocar as triggers separadas para não ter problema na hora de
@@ -15,7 +15,7 @@
 -- Rodar este arquivo sobre uma carga que viola alguma regra não dá erro:
 -- os triggers só valem para as escritas seguintes.
 --
--- Mapa dos triggers (detalhes em DEC-027):
+-- Mapa dos triggers (detalhes no decisoes_detalhamento.md):
 --   T1  Video              -> Canal.qtd_visualizacoes (derivado, delta)
 --   T2  PlataformaUsuario  -> Plataforma.qtd_users (derivado, delta)
 --   T3  Comentario         seq = max(seq) + 1 por vídeo
@@ -26,7 +26,7 @@
 --   T8  NivelCanal         no máximo 5 níveis por canal
 --   T9  Canal/Participa/StreamerPais  streamer = usuário com passaporte
 --   T10 Canal/PlataformaUsuario  dono do canal tem conta na plataforma
---   T11 Doacao             converte o valor para USD no INSERT (DEC-026)
+--   T11 Doacao             converte o valor para USD no INSERT
 --
 -- Convenções: function fn_tNN_<assunto>, trigger trg_tNN_<assunto>[_evento].
 -- Triggers BEFORE da mesma tabela disparam em ordem alfabética do nome,
@@ -47,7 +47,6 @@ SET search_path TO steam_do_bedo;
 -- Por quê: qtd_visualizacoes é atributo derivado do modelo relacional
 --   ("requer atualização"). O professor (16:20-17:38) orientou guardar a
 --   soma bruta e manter por trigger.
--- DEC-027
 -- Cuidado:
 --   * Trigger POR COMANDO com tabelas de transição (REFERENCING ... TABLE):
 --     um INSERT de 10 mil vídeos do mesmo canal faz 1 UPDATE no canal, e
@@ -126,7 +125,6 @@ CREATE TRIGGER trg_t01_video_qtd_visualizacoes_del
 --   periódica"); o professor citou os dois derivados juntos (17:38).
 --   Interpretação: usuários com conta na plataforma (relacionamento
 --   "tem conta" do ER).
--- DEC-027
 -- Cuidado: mesmo desenho do T1 (por comando, tabelas de transição, trava
 --   em ordem). O "periódica" do enunciado permitiria um recálculo por job;
 --   o trigger mantém o valor sempre exato, com custo de 1 UPDATE por
@@ -184,8 +182,7 @@ CREATE TRIGGER trg_t02_plataformausuario_qtd_users_del
 -- O quê: se o INSERT não informar seq, usa max(seq) + 1 do vídeo.
 -- Por quê: "Cada comentário tem um número sequencial que depende do
 --   vídeo" (minimundo). Uma SEQUENCE global não serve (numeraria todos os
---   vídeos juntos); a geração estava em aberto na DEC-017.
--- DEC-027 (resolve o ponto em aberto da DEC-017)
+--   vídeos juntos).
 -- Cuidado:
 --   * Concorrência: duas inserções simultâneas no mesmo vídeo calculariam
 --     o mesmo max + 1 e a segunda falharia pela PK. Por isso a linha do
@@ -226,7 +223,6 @@ CREATE TRIGGER trg_t03_comentario_seq
 -- Por quê: "Cada doação é identificada por um número sequencial que
 --   depende do vídeo, do usuário e do comentário" (minimundo). O
 --   comentário (id_video, seq) já determina o vídeo e o usuário.
--- DEC-027
 -- Cuidado: trava a linha do comentário (FOR UPDATE), mesmo motivo do T3.
 --   O max usa o prefixo da PK (id_video, seq_comentario, seq_pg).
 -- =====================================================================
@@ -260,7 +256,6 @@ CREATE TRIGGER trg_t04_doacao_seq_pg
 --   grupo: o contador é do par (usuário, plataforma), como o número de um
 --   Super Chat na conta do usuário; o comentário identifica a doação.
 --   Pagar pelo mecanismo da plataforma exige ter conta nela ("tem conta").
--- DEC-027
 -- Cuidado:
 --   * Trava a conta do usuário na plataforma (PlataformaUsuario, FOR
 --     UPDATE): duas doações simultâneas do mesmo usuário na mesma
@@ -270,7 +265,7 @@ CREATE TRIGGER trg_t04_doacao_seq_pg
 --     O custo cresce com o tamanho de MecanismoPlat (a menor das tabelas
 --     de doação no seed). Num volume real, o próximo passo seria um
 --     índice de apoio; não foi criado para não gastar o teto de 5 com uma
---     escrita rara (DEC-034).
+--     escrita rara.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION steam_do_bedo.fn_t05_mecanismoplat_seq_plataforma()
 RETURNS trigger
@@ -331,7 +326,6 @@ CREATE TRIGGER trg_t05_mecanismoplat_seq_plataforma
 -- Por quê: o ER marca a especialização com "d" (disjunta) e o minimundo
 --   diz que "a doação pode ser feita de quatro formas": cada doação é
 --   feita de exatamente uma forma.
--- DEC-027
 -- Cuidado:
 --   * (a) trava a linha de Doacao (FOR UPDATE) antes de conferir as
 --     outras tabelas: sem isso, dois INSERT simultâneos em BitCoin e
@@ -453,7 +447,6 @@ CREATE CONSTRAINT TRIGGER trg_t06_mecanismoplat_total
 -- Por quê: escolha do grupo. Um comentário anterior ao vídeo ou um canal
 --   anterior à plataforma são fatos impossíveis. Não cabe em CHECK porque
 --   envolve outra tabela.
--- DEC-027
 -- Cuidado:
 --   * Canal.data é TIMESTAMPTZ e Plataforma.data_fund é DATE: a
 --     comparação usa a data em UTC, para não depender do fuso da sessão.
@@ -559,7 +552,6 @@ CREATE TRIGGER trg_t07_plataforma_temporal
 -- O quê: rejeita o sexto nível de um canal.
 -- Por quê: "Existem cinco níveis de membros e os nomes e os valores de
 --   cada nível são definidos para cada canal" (minimundo).
--- DEC-027
 -- Cuidado: trava a linha do canal (FOR NO KEY UPDATE) antes de contar,
 --   para que dois INSERT simultâneos de nível no mesmo canal não passem
 --   os dois com 4 níveis. NO KEY UPDATE não bloqueia as verificações de
@@ -601,7 +593,6 @@ CREATE TRIGGER trg_t08_nivelcanal_maximo_upd
 --   país de passaporte ("tem nacionalidade"), e só streamers têm canal
 --   ("um ou mais canais estão associados a cada streamer") e participam
 --   de vídeos.
--- DEC-027
 -- Cuidado: as linhas de passaporte encontradas são travadas com FOR KEY
 --   SHARE, como faz uma FK: um DELETE concorrente do passaporte espera o
 --   fim desta transação e então passa pela verificação do lado de
@@ -657,11 +648,10 @@ CREATE TRIGGER trg_t09_streamerpais_remocao
 -- Por quê: relacionamento "tem conta" do ER: o streamer cria o canal com
 --   a conta que tem na plataforma. Funciona como uma FK composta de Canal
 --   para PlataformaUsuario.
--- DEC-027
 -- Cuidado:
 --   * Daria para declarar FOREIGN KEY (nro_plataforma, id_streamer)
 --     REFERENCES PlataformaUsuario. O grupo preferiu o trigger para não
---     mudar os relacionamentos do modelo relacional dado (DEC-019): no
+--     mudar os relacionamentos do modelo relacional dado: no
 --     enunciado, Canal referencia Plataforma e Usuario, e não
 --     PlataformaUsuario.
 --   * Não vale para Comentario nem Inscricao: conferir a conta a cada
@@ -720,10 +710,9 @@ CREATE TRIGGER trg_t10_conta_remocao
 --   residência do usuário (professor, 12:09-15:14). O grupo escolheu
 --   gravar o valor histórico (quanto valia no dia da doação), uma das duas
 --   formas que o professor aceitou.
--- DEC-026
 -- Cuidado:
 --   * O valor em moeda local não fica guardado: não pode criar coluna
---     (DEC-019). Para reconstruí-lo seria preciso o fator do dia, que a
+--. Para reconstruí-lo seria preciso o fator do dia, que a
 --     tabela Conversao não tem histórico.
 --   * Só no INSERT. Um UPDATE de valor é tratado como correção já em USD.
 --   * Valor que vira menos de US$ 0,01 é rejeitado, porque a coluna tem 2

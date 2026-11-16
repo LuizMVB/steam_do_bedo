@@ -2,7 +2,7 @@
 # Projeto de Banco de Dados 2026/2 - Stream do Bedo
 # Atalhos para subir o banco e executar os arquivos na ordem do trabalho.
 #
-# Ordem (DEC-030): ddl -> seed -> views -> functions -> triggers -> tests
+# Ordem: ddl -> seed -> views -> functions -> triggers -> tests
 #   make setup            sobe o banco e executa tudo, menos os testes
 #   make tests            executa as chamadas das functions (tests.sql)
 #   make setup ESCALA=0.1 carga reduzida (menos de 1 min) para teste rápido
